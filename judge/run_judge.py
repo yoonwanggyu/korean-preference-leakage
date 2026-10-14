@@ -2,7 +2,7 @@
 
 평가 항목 = 묶음(질문 100 × seed 5 = 500) × 제시 순서(N_ROTATIONS, 기본 3) = 1,500개. 순서는 select_items.py가 정한다.
 
-평가자 4명
+평가자 4명 (본 분석은 gpt·claude·gemini 3명의 채점으로 했고, hyperclova는 코드만 준비해 두고 아직 실행하지 않았다)
   gpt / claude / gemini : 교사와 같은 모델(.env의 OPENAI_MODEL, ANTHROPIC_MODEL, GEMINI_MODEL).
                           같은 계열 선호(선호 누출)를 보려면 교사와 평가자가 같은 모델이어야 한다.
   hyperclova            : 중립 평가자. 세 계열과 무관한 NAVER HyperCLOVA X(HCX-007)를 CLOVA Studio의
@@ -23,7 +23,7 @@
   {item_id, group_id, rotation, order, judge, judge_model, question_id, seed,
    factuality: {reason, ranking: ["B","A","C"], ranks: {"gpt": 2, "claude": 1, "gemini": 3}}, ... 4개 기준 + overall}
   ranking은 평가자가 쓴 라벨(위치) 순위이고, ranks는 이를 교사별 순위로 풀어 쓴 것이다(order로 변환).
-  네 평가자가 끝나면 judge/merge_results.py가 학생 응답 JSON에 평가 결과를 붙여 judge/output/judged/에 저장한다.
+  채점이 끝나면 judge/merge_results.py가 학생 응답 JSON에 평가 결과를 붙여 judge/output/judged/에 저장한다.
 형식이 틀린 응답은 최대 MAX_PARSE_TRIES번 다시 요청하고, 그래도 실패하면 기록하지 않는다(다시 실행하면 재시도).
 """
 

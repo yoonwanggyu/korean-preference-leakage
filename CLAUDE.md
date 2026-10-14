@@ -10,7 +10,7 @@
 - 설정은 .env와 상단 상수로 관리한다.
 
 # 아키텍처
-실행 순서: data → inference(교사 답) → classify / sft → inference(학생 답) → judge → results → description
+실행 순서: data → inference(교사 답) → classify / sft → inference(학생 답) → judge → results → description(포스터는 직접 작성)
 
 - data/: 질문 준비
   - load_koalpaca.py: KoAlpaca-v1.1a에서 학습용 instruction 1,200개 → koalpaca_instructions_1200.json
@@ -39,10 +39,11 @@
 - results/: 요약 표와 그림
   - style_analysis.py: 교사 답의 길이·형식·문체 비교 → output/style_*, fig_style_*.png
   - sft_curves.py: SFT loss 곡선과 교차 loss 그림 → output/sft_*.png, sft_summary.json
-  - poster.py: 분석 CSV로 description/poster.html 생성
-- description/: 보고 문서(HTML과 Chrome 인쇄 PDF)
-  - result.html: 전체 결과 보고서, poster.html: 포스터, teacher_style_analysis.html, sft_guide.html, img/: 문서용 그림
-- 신청서_SampleTex/: 학술대회 신청서(hwp)와 LaTeX 초록(5. SampleTexMY/KoreanAbstract_preference_leakage.tex)
+- description/: 연구 기록 문서 하나로 통합
+  - poster.html: 모든 실험·설계 근거·결과·실제 LLM 입출력 예시·예상 질문을 담은 단일 문서(목차 링크 포함). 직접 편집해 관리한다(생성 스크립트 없음)
+  - poster.pdf: poster.html을 Chrome으로 인쇄한 PDF
+- 신청서_SampleTex/: 학술대회 신청서(hwp)와 초록(git 제외)
+  - abstract/tex/KoreanAbstract_preference_leakage.tex(+ 스타일 파일), abstract/pdf/: 컴파일한 초록 PDF
 - 루트: requirements.txt(.venv 라이브러리), .env(API 키, 커밋 안 함)
 
 # 중요사항

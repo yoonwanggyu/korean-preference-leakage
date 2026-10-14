@@ -1,4 +1,4 @@
-"""네 평가자의 listwise 채점 기록을 학생 응답 JSON에 붙여 하나로 합친다.
+"""평가자들의 listwise 채점 기록을 학생 응답 JSON에 붙여 하나로 합친다(현재 gpt·claude·gemini, hyperclova는 채점하면 추가된다).
 
 inference/output_2nd/{teacher}_seed{seed}_eval400.json의 내용(질문, 참조 답, 학생 응답, 길이, 잘림 여부 등)은
 그대로 두고, 평가 대상 100문항에는 "in_judge_set": true와 "judges" 키를 추가한다. 원본 파일은 수정하지 않고
@@ -93,7 +93,7 @@ def main():
                                                                encoding="utf-8")
     (out_dir.parent / "ranks_long.csv").write_text("\n".join(long_lines) + "\n", encoding="utf-8")
     print(f"저장: {out_dir} (학생 파일 {len(TEACHERS) * len(seeds)}개), ranks_long.csv ({len(long_lines) - 1}행, "
-          f"완료 시 1,500 항목 × 학생 3 × (기준 4 + 최종 1) × 평가자 4 = 90,000행)")
+          f"평가자 1명당 1,500 항목 × 학생 3 × (기준 4 + 최종 1) = 22,500행)")
 
 
 if __name__ == "__main__":

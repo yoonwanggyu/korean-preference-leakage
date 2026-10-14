@@ -10,7 +10,7 @@
 val로 고르지 않고 세 학생 모두 마지막 step의 모델을 쓴다.
 
 출력
-  sft/checkpoints/{teacher}/seed{seed}/   최종 학생 모델(bf16)과 토크나이저  ← Drive에 두고 내려받지 않아도 됨
+  sft/checkpoints/{teacher}/seed{seed}/   최종 학생 모델(bf16, 학생당 약 1.2GB)과 토크나이저. 용량이 커서 git에서 제외
   sft/runs/{teacher}_seed{seed}/
     log_history.json   Trainer 전체 기록 (step마다 train loss, 학습률, 기울기 크기 / EVAL_STEPS마다 val loss)
     train_loss.csv     step, epoch, loss, learning_rate, grad_norm
