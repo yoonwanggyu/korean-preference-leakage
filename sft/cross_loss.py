@@ -10,7 +10,8 @@
   이미 계산한 파일은 건너뛴다. 다시 계산하려면 --force.
 
 CSV 열: student_teacher, seed, eval_teacher, loss(답변 토큰 평균 교차 엔트로피), perplexity, n_answer_tokens
-student_teacher=base는 학습 전 원본 Qwen3-0.6B-Base다.
+student_teacher=base는 학습 전 원본 Qwen3-0.6B-Base다. 본 실험에서는 --base 결과를 남기지 못해, 원본 모델 값으로
+각 교사 run의 학습 전(step 0) val loss를 썼다(같은 모델·같은 답변이라 같은 값, results/sft_curves.py).
 """
 
 import argparse

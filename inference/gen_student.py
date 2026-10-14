@@ -9,13 +9,13 @@
 학습 때와 같은 build_prompt()로 질문을 넣고, greedy 디코딩(항상 가장 확률이 높은 토큰)으로 답을 만든다.
 그래서 같은 학생은 언제 돌려도 같은 답을 내고, 학생 간 차이는 학습된 모델의 차이만 반영한다.
 <|im_end|> 또는 <|endoftext|>가 나오면 멈춘다. 최대 생성 길이는 모든 질문에 같다.
-  기본(1차): 프롬프트+답변이 STUDENT_MAX_LEN(1024)을 넘지 않게 1024 - (가장 긴 프롬프트) = 590토큰, 반복 억제 없음
-  2차: --repetition-penalty 1.1로 같은 문장 반복을 줄이고, --max-new-tokens 1024로 답변 길이 상한을 따로 준다.
-  1차 결과에서 같은 문장 반복과 긴 답의 잘림이 많아(특히 Claude 학생 37.5%) 2차 설정을 추가했다.
+  기본값(2차, 평가에 사용): 반복 억제 1.1로 같은 문장 반복을 줄이고, 답변 최대 길이를 1,024토큰으로 따로 준다.
+  1차: 반복 억제 없음, 최대 590토큰(= 학습 최대 길이 1,024 - 가장 긴 프롬프트 434토큰).
+  1차 결과에서 같은 문장 반복과 긴 답의 잘림이 많아(특히 Claude 학생 37.5%) 2차 설정으로 다시 생성했다.
   2차 생성은 Colab A100에서 학생 모델 15개를 불러와 이 스크립트와 같은 로직으로 실행했다(배치 64).
 
 출력: inference/output_2nd/{teacher}_seed{seed}_eval400.json (평가에 사용하는 2차 결과)
-      1차 결과는 2차와 비교한 뒤 삭제했다(통계는 description/sft_guide에 기록).
+      1차 결과는 2차와 비교한 뒤 삭제했다(통계는 description/poster.html 5.5.1에 기록).
   [{id, category, instruction, reference, teacher, seed, output, n_new_tokens, finished}]
   finished=false는 최대 길이에 걸려 잘린 답이다.
 """
@@ -102,7 +102,7 @@ def main():
 
         tok = AutoTokenizer.from_pretrained(path)
         tok.padding_side = "left"   # 생성할 때는 왼쪽을 패딩해야 답이 프롬프트 바로 뒤에 이어진다
-        # 모든 질문에 같은 최대 생성 길이: 가장 긴 프롬프트 + 답변이 MAX_LEN을 넘지 않게 한다.
+        # 모든 질문에 같은 최대 생성 길이. --max-new-tokens 0이면 가장 긴 프롬프트 + 답변이 MAX_LEN을 넘지 않게 정한다.
         max_prompt = max(len(tok(build_prompt(q["instruction"]), add_special_tokens=False)["input_ids"]) for q in questions)
         max_new = cli.max_new_tokens or MAX_LEN - max_prompt
         dtype = torch.bfloat16 if torch.cuda.is_available() and torch.cuda.is_bf16_supported() else torch.float32
