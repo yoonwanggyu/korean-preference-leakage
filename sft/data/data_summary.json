@@ -1,0 +1,27 @@
+{
+  "n_common": 1200,
+  "n_excluded": 1,
+  "n_eligible": 1199,
+  "n_train": 1000,
+  "n_val": 199,
+  "seed": 42,
+  "max_len": 1024,
+  "tokenizer": "Qwen/Qwen3-0.6B-Base",
+  "tokens": {
+    "gpt": {
+      "train_total": 520685,
+      "train_median": 518,
+      "train_max": 892
+    },
+    "claude": {
+      "train_total": 663627,
+      "train_median": 658,
+      "train_max": 945
+    },
+    "gemini": {
+      "train_total": 591392,
+      "train_median": 587,
+      "train_max": 900
+    }
+  }
+}

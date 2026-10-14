@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LLM 평가자 선호 누출 포스터</title><style>
+:root{--bg:#f9f9f7;--surface:#fcfcfb;--card:#ffffff;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;--line:#e4e3df;
+--accent:#2a78d6;--note:#f4f7fc;--warn:#fdf6ec;--c-gpt:#2a78d6;--c-claude:#eb6834;--c-gemini:#1baf7a;--c-neutral:#4a3aa7;--c-neutral2:#a8a69e;--sig:#eef4fc}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d0d0d;--surface:#1a1a19;--card:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--line:#383835;
+--accent:#3987e5;--note:#1f2a38;--warn:#33291a;--c-gpt:#3987e5;--c-claude:#d95926;--c-gemini:#199e70;--c-neutral:#9085e9;--c-neutral2:#6f6e68;--sig:#1f2a38}}
+:root[data-theme="dark"]{--bg:#0d0d0d;--surface:#1a1a19;--card:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--line:#383835;
+--accent:#3987e5;--note:#1f2a38;--warn:#33291a;--c-gpt:#3987e5;--c-claude:#d95926;--c-gemini:#199e70;--c-neutral:#9085e9;--c-neutral2:#6f6e68;--sig:#1f2a38}
+*{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.65 "Apple SD Gothic Neo","Pretendard","Noto Sans KR",system-ui,sans-serif}
+main{max-width:1180px;margin:0 auto;padding:28px 16px 80px}
+header.top{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:26px 28px;margin-bottom:18px}
+header.top h1{font-size:28px;line-height:1.3;margin:0 0 6px}
+header.top .sub{color:var(--ink2);margin:0}
+.hero{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:18px}
+.hero div{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.hero b{display:block;font-size:24px;line-height:1.2}
+.hero span{font-size:13px;color:var(--ink2)}
+section{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 26px;margin:16px 0}
+section h2{font-size:21px;margin:0 0 12px;display:flex;gap:10px;align-items:center}
+section h2 .no{display:inline-flex;width:30px;height:30px;border-radius:50%;background:var(--ink);color:var(--card);font-size:16px;align-items:center;justify-content:center;flex:none}
+h3{font-size:16.5px;margin:22px 0 8px}
+p{margin:8px 0}
+.cols{display:block}
+.note,.warn{border-radius:10px;padding:12px 16px;margin:12px 0}
+.note{background:var(--note);border-left:4px solid var(--accent)}
+.warn{background:var(--warn);border-left:4px solid #eda100}
+figure{margin:12px 0;padding:0}
+figcaption{font-size:13px;color:var(--ink2);margin-top:4px}
+.chart{width:100%;height:auto;display:block}
+.chart .grid{stroke:var(--grid);stroke-width:1}
+.chart .axis{stroke:var(--axis);stroke-width:1}
+.chart .zero{stroke:var(--ink2);stroke-width:1.2}
+.chart .ref{stroke:var(--muted);stroke-width:1.2;stroke-dasharray:4 4}
+.chart .refl{fill:var(--muted);font-size:12px}
+.chart .tick{fill:var(--muted);font-size:12px}
+.chart .lab{fill:var(--ink2);font-size:13px}
+.chart .val{fill:var(--ink2);font-size:12px}
+.chart .b{font-weight:700;fill:var(--ink)}
+.chart .ci{stroke:var(--ink2);stroke-width:1.5}
+.chart rect.hl{stroke:var(--ink);stroke-width:2}
+.chart .dot{stroke:var(--surface);stroke-width:2}
+.chart .dot.own{stroke:var(--ink);stroke-width:2}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--ink2);margin-bottom:4px}
+.legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:6px;vertical-align:-1px}
+.tw{overflow-x:auto;margin:10px 0}
+table{border-collapse:collapse;width:100%;font-size:13.5px;background:var(--card)}
+th,td{padding:7px 9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{border-bottom:2px solid var(--ink);font-weight:700}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+td.own{font-weight:700}
+td.sig{background:var(--sig)}
+.m{color:var(--muted);font-size:12px}
+.flow{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+.flow div{flex:1 1 150px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:13.5px}
+.flow b{display:block;color:var(--accent);font-size:12.5px}
+.eq{font-family:"Times New Roman","Apple SD Gothic Neo",serif;font-size:17px;text-align:center;margin:12px 0;padding:10px 12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;line-height:2.1;overflow-x:auto}
+.eq sub{font-size:0.7em}.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 4px}.frac span:first-child{border-bottom:1px solid var(--ink);padding:0 4px}.frac span{line-height:1.6}
+.rm{background:var(--warn);color:#b4232c;border-radius:3px;padding:0 2px;font-weight:600}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .rm{color:#ff8a80}}:root[data-theme="dark"] .rm{color:#ff8a80}
+pre{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font:12.5px/1.55 "SF Mono",Menlo,monospace;white-space:pre-wrap;overflow-x:auto}
+.abstract{font-size:14.5px;line-height:1.8;text-align:justify}
+.kw{color:var(--ink2);font-size:14px}
+ul{margin:6px 0;padding-left:20px}
+li{margin:3px 0}
+@media (max-width:820px){.cols{grid-template-columns:1fr}.hero{grid-template-columns:1fr 1fr}section{padding:18px 16px}}
+@page{size:A4;margin:12mm 11mm}
+@media print{body{background:#fff;font-size:12.5px}main{padding:0;max-width:none}section,header.top{break-inside:auto;border-color:#ddd}
+figure,.tw,.note,.warn,.hero,.flow{break-inside:avoid}h2,h3{break-after:avoid}table{font-size:11.5px}th,td{padding:5px 6px}}
+</style></head><body><main>
+
+<header class="top">
+  <h1>한국어 합성데이터 기반 LLM-as-a-Judge의 평가자별 선호 누출 추정</h1>
+  <p class="sub">GPT·Claude·Gemini가 만든 답으로 학습한 학생 모델을, 같은 세 모델이 평가할 때 자기 계열 학생을 더 좋게 보는가?</p>
+  <div class="hero">
+    <div><b>96.5%</b><span>서식을 지워도 답변만으로 생성 모델을 구별 (KLUE-RoBERTa, 우연 33.3%)</span></div>
+    <div><b>15 / 15</b><span>학생 15명 모두 자기 교사의 답에서 loss가 가장 낮음 (교차 loss)</span></div>
+    <div><b>+9.8%p</b><span>Gemini 평가자의 자기 계열 효과: 품질이 같은 상대를 이길 확률 (Holm p 0.003)</span></div>
+    <div><b>50%</b><span>첫 번째(A) 답을 1위로 뽑은 비율, GPT 평가자 (기대 33.3%)</span></div>
+  </div>
+</header>
+
+<section id="s1"><h2><span class="no">1</span>연구 배경</h2>
+  <div class="cols"><div>
+  <p><b>합성데이터 학습.</b> 작은 모델을 학습시킬 사람이 쓴 데이터가 부족하면, GPT·Claude·Gemini 같은 큰 모델(교사)에게 답을 쓰게 해 그 답으로 작은 모델(학생)을 학습한다. 학생은 교사의 지식뿐 아니라 <b>말투, 형식, 어휘</b>까지 물려받는다.</p>
+  <p><b>LLM-as-a-Judge.</b> 학생의 성능은 사람이 채점하기에 비싸서, 다시 큰 모델에게 채점을 맡긴다(Zheng et al., 2023). 평가가 빠르고 사람 판단과도 꽤 일치하지만, LLM 평가자에게는 <b>위치 편향</b>(먼저 나온 답 선호), <b>길이 편향</b>, <b>자기 선호</b>(자기 출력 선호; Panickssery et al., 2024) 같은 체계적 편향이 있다고 보고되었다.</p>
+  </div><div>
+  <p><b>선호 누출(preference leakage).</b> 데이터를 만든 모델과 채점하는 모델이 같거나 관련되어 있으면, 평가자가 <b>자기 문체를 물려받은 학생</b>을 품질과 무관하게 더 좋게 볼 수 있다(Li et al., 2026). 이 현상은 영어 벤치마크에서 처음 보고되었다.</p>
+  <div class="note"><b>왜 중요한가.</b> 같은 계열의 모델로 데이터를 만들고 평가까지 하는 일은 흔하다. 누출이 있으면 "어느 학생 모델이 더 좋은가"라는 결론이 실제 품질이 아니라 <b>평가자와의 계보</b>로 정해질 수 있다. 한국어 합성데이터에서 이 현상이 나타나는지, 얼마나 큰지는 아직 확인되지 않았다.</div>
+  </div></div>
+</section>
+
+<section id="s2"><h2><span class="no">2</span>연구 질문</h2>
+
+  <p><b>"LLM 평가자는 자기 모델이 만든 합성데이터로 학습한 모델의 답을 더 좋게 평가하는가?"</b></p>
+  <p>요즘 작은 모델은 큰 모델(GPT, Claude, Gemini)이 만든 답으로 학습시키고(합성데이터 학습), 그 성능도 큰 모델에게 채점을 맡긴다(LLM-as-a-Judge). 이때 데이터를 만든 모델과 채점하는 모델이 같으면, 채점 모델이 자기 문체를 물려받은 답을 좋게 보는 <b>선호 누출</b>이 생길 수 있다(Li et al., 2026). 이 연구는 한국어 질문에서 이 현상이 실제로 나타나는지, 얼마나 큰지 측정했다.</p>
+  <ul>
+    <li><b>가설 H1:</b> 평가자는 품질이 같다면 자기 계열 학생을 더 높은 순위에 놓는다. → 6절(최종 순위)</li>
+    <li><b>가설 H2:</b> 이 선호는 평가 기준에 따라 크기가 다르다. → 6절(기준별 분석)</li>
+    <li><b>가설 H3:</b> 이 선호는 학습 무작위성(seed)에 따른 우연이 아니라 다섯 번의 반복 학습에서 모두 나타난다. → 6절(seed 반복)</li>
+  </ul>
+  <p class="meta">전제 확인(앞선 단계): 세 교사의 답은 답만 보고도 97% 정확도로 구별되고(다항 로지스틱 97.2%, KLUE-RoBERTa 97.1%; 서식을 지운 텍스트에서도 92.1%, 96.5%), 학생 15명 모두 자기 교사의 문체를 물려받았다(교차 loss 15/15). 즉 평가자가 자기 계열 문체를 알아볼 수 있는 조건이다.</p>
+
+  
+</section>
+
+<section id="s3"><h2><span class="no">3</span>데이터</h2>
+  <div class="flow">
+    <div><b>① 원천</b>beomi/KoAlpaca-v1.1a 21,155개 (네이버 지식iN 질문 기반 한국어 지시 데이터)</div>
+    <div><b>② 추출</b>빈 질문·중복 제거 후 seed 42로 학습용 1,200개 + 평가용 400개 (서로 겹치지 않음)</div>
+    <div><b>③ 교사 생성</b>GPT·Claude·Gemini가 같은 시스템 프롬프트로 1,200개에 답</div>
+    <div><b>④ 학습 데이터</b>세 교사 모두 답한 1,199개 중 1,000개 학습 + 199개 검증</div>
+    <div><b>⑤ 평가 데이터</b>학생 15명이 평가 질문 400개에 답 → 모두 끝까지 쓴 144개 중 100개를 평가</div>
+  </div>
+  <div class="cols"><div>
+  <h3>교사 답변 생성</h3>
+  <div class="tw"><table class=""><thead><tr><th>항목</th><th>GPT</th><th>Claude</th><th>Gemini</th></tr></thead><tbody><tr><td>모델</td><td>gpt-5.6-terra</td><td>claude-sonnet-5-5</td><td>gemini-3.8-flash</td></tr><tr><td>추론 설정</td><td>effort medium</td><td>adaptive, effort medium</td><td>thinking medium</td></tr><tr><td>공통</td><td colspan='3'>같은 시스템 프롬프트(한국어, 600자 이내, 단정 금지 등), temperature 기본값, 출력 한도 4,096토큰</td></tr><tr><td>실패</td><td>0</td><td>1 (안전 필터 거절 → 세 교사 모두에서 제외)</td><td>0</td></tr></tbody></table></div>
+  <p>마크다운(굵게, 목록) 사용 여부는 일부러 지정하지 않아, 형식 차이도 모델 고유 스타일로 남겼다.</p>
+  </div><div>
+  <h3>데이터 구성</h3>
+  <div class="tw"><table class=""><thead><tr><th>용도</th><th>질문 수</th><th>설명</th></tr></thead><tbody><tr><td>학생 학습</td><td class='num'>1,000</td><td>세 교사 답 각 1,000개, 같은 질문 id</td></tr><tr><td>학습 중 검증</td><td class='num'>199</td><td>학습에 안 쓴 질문. val loss, 교차 loss</td></tr><tr><td>분류 실험</td><td class='num'>1,199 × 3</td><td>질문 단위 70/15/15 분할 (train 839, val 179, test 181)</td></tr><tr><td>학생 응답</td><td class='num'>400</td><td>학습 질문과 겹치지 않는 평가 질문</td></tr><tr><td>LLM 평가</td><td class='num'>100</td><td>학생 15명 모두 끝까지 답한 144개 중 추첨</td></tr></tbody></table></div>
+  <p class="m">길이 검사: 학습 형식 전체를 Qwen3 토크나이저로 세면 최대 945토큰으로 1,024를 넘는 예제는 없어, 길이 때문에 빠진 질문은 없다.</p>
+  </div></div>
+
+  <h3>평가 데이터: "학생 15명 모두 끝까지 쓴 144개"란 무엇인가</h3>
+  <p><b>"끝까지 쓴 답"(완전한 답)의 정의.</b> 학생은 답을 다 쓰면 <b>끝 토큰</b>(&lt;|im_end|&gt;)을 스스로 내고 멈추도록 학습되었다(5.1). 생성 한도는 1,024토큰이다. 끝 토큰을 내고 1,024토큰 전에 멈춘 답을 "완전한 답", 끝 토큰 없이 1,024토큰에서 <b>강제로 잘린</b> 답을 "잘린 답"이라고 부른다.</p>
+  <ul>
+    <li><b>전체:</b> 학생 15명 × 평가 질문 400개 = 답 6,000개 중 <b>502개(8.4%)가 잘린 답</b>이다. 502개 모두 끝 토큰을 내지 못해 1,024토큰에서 잘렸고, 빈 답은 없었다. 학생별 개수는 표 5-3에 있다(Claude 학생이 373개로 가장 많다).</li>
+    <li><b>144개:</b> 한 질문에 대해 학생 15명의 답이 <b>모두</b> 완전한 질문이다. 400개 중 144개다. 이 중 100개를 추첨(추첨 난수 42)해 LLM 평가에 썼다.</li>
+    <li><b>왜 "15명 모두"인가:</b> listwise 평가는 같은 질문에 대한 같은 seed의 학생 세 명을 나란히 비교한다. 한 명의 답만 잘려 있으면 평가자는 문체가 아니라 "잘렸다"는 이유로 그 답을 꼴찌로 놓을 것이다. 또 다섯 seed 모두에서 <b>같은 질문 100개</b>를 써야 seed 간 결과를 비교할 수 있다.</li>
+  </ul>
+  <div class="tw"><table class=""><thead><tr><th>질문 하나에서 완전한 답을 쓴 학생 수 (15명 중)</th><th class="num">15명</th><th class="num">14명</th><th class="num">13명</th><th class="num">12명</th><th class="num">11명</th><th class="num">10명</th><th class="num">9명</th><th class="num">7명</th><th class="num">합계</th></tr></thead><tbody><tr><td>질문 수</td><td class='num'><b>144</b></td><td class='num'>121</td><td class='num'>73</td><td class='num'>37</td><td class='num'>11</td><td class='num'>8</td><td class='num'>4</td><td class='num'>2</td><td class='num'>400</td></tr></tbody></table></div>
+  <p class="m">표 3-1. 평가 질문 400개를 "완전한 답을 쓴 학생 수"로 나눈 것. 14명인 121개 질문은 15명 중 단 한 명이 잘려서 빠졌다.</p>
+
+  <p><b>예시: 같은 질문에서 완전한 답과 잘린 답.</b> 질문 "어른 펭귄과 새끼 펭귄의 털색깔이 다른 이유는 무엇인가요?"에 같은 GPT 교사 데이터로 학습한 두 학생이 답했다. 이 질문은 seed 45 학생 한 명이 잘려서 144개에서 빠졌다.</p>
+  <div class="tw"><table class=""><thead><tr><th style="width:18%">학생</th><th>답 (발췌)</th></tr></thead><tbody>
+  <tr><td><b>GPT 학생 seed 42</b><br><span class="m">완전한 답, 235토큰에서 끝 토큰을 내고 멈춤</span></td><td>어른 펭귄의 턨색은 <b>주성유전</b>이라서 새끼와 거의 같아집니다. … 다만 헤드카펫이나 얼굴 부분의 노랑/파랑 등은 서로 다른 유전자 때문에 달라질 수 있습니다. <span class="m">[끝]</span></td></tr>
+  <tr><td><b>GPT 학생 seed 45</b><br><span class="m">잘린 답, 1,024토큰에서 강제 종료</span></td><td>어른 펭귄과 새끼 펭귄의 털색깔 차이는 주로 <b>생리구조</b> 때문입니다. … 새끼 펭귄은 아직 변하지 않았을 가능성이 큽니다. )<br><span class="m">⏎ ⏎ ⏎ (빈 줄)</span><br>유전적 요인이 더 큰 역할을 하는 경우도 있지만, 생리구조가 가장 크게 작용합니다. )<br><span class="m">⏎ ⏎ ⏎</span><br>유전학자는 헤르페린(Herpesin), 세로닌 합성효소(SNase) 등을 연구해 … )<br><span class="m">⏎ ⏎ ⏎</span><br>유전적 차이는 없더라도 어른 펭귄이 녹색·검란색이며, … )<br><span class="m">⏎ ⏎ ⏎</span><br>유전학자는 헤르페린(Herpesin), 세로닌 합성효소(SNase) 등을 연구해 … )<br><span class="m">⏎ ⏎ ⏎</span><br>유전적 차이는 없더라도 어른 펭귄이 녹색·검란색이며, 새끼 펭귄이 <span class="m">[1,024토큰에서 잘림]</span></td></tr>
+  <tr><td><b>GPT 학생 seed 44</b><br><span class="m">다른 질문 "시력이 12면 어느 정도까지 보일까요?"의 잘린 답</span></td><td>… 다만 모든 면이 10배 더 잘 보이는 것은 아닙니다. )<br><span class="m">⏎ ⏎ ⏎</span><br>유연성은 무엇이며, 유연성이란 말은 어떤 의미인가요?<br>유연성은 생물체가 특정 환경 변화에 대응하거나 … )<br><span class="m">⏎ ⏎ ⏎</span><br>생명체 내부에서 에너지를 저장하는 장소는 어디인가요? … <span class="m">[스스로 새 질문을 지어내고 답하기를 반복하다 잘림]</span></td></tr>
+  </tbody></table></div>
+  <p class="m">표 3-2. 학생 답의 앞부분과 끝부분. ⏎ = 줄바꿈. 두 학생 모두 내용은 사실과 다르다(0.6B 학생 답의 일반적 수준, 6.1 참고). 이 절의 관심은 내용이 아니라 <b>끝맺음</b>이다.</p>
+  <p><b>잘린 답의 두 가지 모양.</b> 잘린 답 502개를 살펴보면, (1) 답을 다 쓴 자리에서 끝 토큰 대신 ")"와 빈 줄을 내고 계속 쓰는 경우가 431개(86%)이고, (2) 후반부에 <b>같은 문장 조각이 세 번 이상 되풀이되는</b> 반복 루프가 422개(84%)다(두 모양은 대부분 함께 나타난다). 나머지는 위 seed 44처럼 새 질문을 지어내 답을 이어 가는 경우다.</p>
+
+  <div class="note"><b>왜 0.6B 모델은 이렇게 끝맺지 못하고 반복하는가: 선행 연구</b>
+  <ul style="margin-bottom:0">
+    <li><b>greedy 디코딩이 반복을 부른다.</b> 매 위치에서 확률이 가장 높은 토큰만 고르는 최대화 기반 디코딩(greedy, beam search)은 사람 글과 달리 같은 말을 되풀이하는 퇴화(degeneration)를 자주 일으킨다(Holtzman et al., 2020). 본 연구는 같은 입력에 항상 같은 답이 나오도록(결과가 무작위 추출 운에 좌우되지 않도록) greedy 디코딩을 썼다.</li>
+    <li><b>최대우도 학습 자체가 반복에 너무 높은 확률을 준다.</b> 다음 토큰의 우도를 최대화하는 표준 학습 목표로 학습한 모델은 반복과 흔한 단어가 들어간 문장에 사람 글보다 과도한 확률을 준다(Welleck et al., 2020).</li>
+    <li><b>반복은 스스로 강화된다.</b> 문장이 문맥에 한 번 반복되면, 반복 횟수가 늘수록 그 문장을 또 생성할 확률이 계속 커진다(self-reinforcement effect). 처음부터 확률이 높았던 문장일수록 이 효과가 강하다(Xu et al., 2022). 위 seed 45처럼 한 번 루프에 들어가면 빠져나오지 못하는 이유다.</li>
+    <li><b>작은 모델일수록 심하다.</b> OPT 계열에서 모델 크기를 키우면 반복이 6.7B까지 크게 줄지만 그 이후로는 효과가 줄어 66B에서도 사람보다 반복이 많다(Li et al., 2023). 0.6B는 이 범위의 가장 작은 쪽으로, 반복이 가장 잘 일어나는 크기다. 같은 연구는 학습 데이터에 반복이 적은 지시 데이터로 미세조정하면 반복이 줄어든다고도 보고했다.</li>
+    <li><b>본 연구 조건에서의 해석:</b> 학생은 대화 형식을 모르는 Base 모델에서 출발해 1,000개 예제로 3 epoch만 학습했다. 그래서 "답이 끝나면 끝 토큰을 낸다"는 습관이 약하게 학습되었고, 끝 토큰을 놓치면 사전학습 때처럼 문서를 이어 쓰듯 새 문단이나 새 질문을 만들다가 위의 반복 루프에 빠진다. 반복 억제(repetition penalty 1.1; Keskar et al., 2019)를 걸어도 완전히 막지는 못했다. 답이 가장 길고 목록·소제목이 많은 Claude 교사 스타일을 배운 학생에서 잘린 답이 가장 많은 것(373개)도, 긴 답일수록 끝 토큰을 놓칠 기회가 많기 때문으로 보인다.</li>
+  </ul></div>
+  <p class="m">한계: "15명 모두 끝까지 쓴 질문"만 쓰면, 짧게 답할 수 있는 질문 쪽으로 평가 질문이 치우칠 수 있다. 다만 세 학생 모두 같은 질문으로 비교하므로 학생 간 비교의 공정성은 유지된다.</p>
+</section>
+
+<section id="s4"><h2><span class="no">4</span>LLM의 답변만으로 어떤 모델인지 구별할 수 있는가?</h2>
+  <p><b>왜 필요한가.</b> 평가자가 자기 계열을 선호하려면, 먼저 <b>세 교사의 답변이 통계적으로 서로 달라야</b> 한다. 각 LLM은 학습 데이터와 정렬 과정이 달라 서로 다른 조건부 분포 P<sub>모델</sub>(답변 | 질문)을 학습했을 것이다. 분포가 정말 다르다면, 답변만 보고 어느 모델에서 나왔는지 맞히는 분류기를 만들 수 있다. 분포가 같다면 어떤 분류기도 우연(33.3%)을 넘을 수 없다. 분류 정확도는 분포 차이의 <b>보수적 하한</b>이다.</p>
+  <h3>4.1 실험 설계 한눈에 보기</h3>
+  <div class="flow">
+    <div><b>① 재료</b>세 교사가 모두 답한 질문 1,199개 × 3 = 답변 3,597개. 정답(레이블) = 생성 모델</div>
+    <div><b>② 질문 단위 분할</b>질문을 train 839 / val 179 / test 181개로 나누고, 같은 질문의 세 답은 같은 쪽에</div>
+    <div><b>③ 글 → 숫자</b>로지스틱: 글자 조각 TF-IDF 벡터. RoBERTa: 토큰 열</div>
+    <div><b>④ 학습</b>train 답변 2,517개로 분류기를 학습</div>
+    <div><b>⑤ 설정 고르기</b>val 답변 537개로 규제 강도 C(로지스틱)와 체크포인트(RoBERTa)를 고름</div>
+    <div><b>⑥ 시험 한 번</b>test 답변 543개를 단 한 번 분류해 정확도·F1 계산</div>
+  </div>
+  <p>같은 과정을 <b>원문</b>과 서식을 지운 <b>정규화 텍스트</b>(4.6)에 각각 한 번씩, 두 분류기로 반복했다(2 × 2 = 4개 실험). 코드: <code>classify/common.py</code>(분할·정규화), <code>logistic.py</code>, <code>roberta.py</code>.</p>
+
+  <h3>4.2 재료: 같은 질문에 대한 세 모델의 답</h3>
+  <p>분류기가 보는 것은 아래와 같은 답변 하나뿐이다. 질문도, 모델 이름도 보지 않는다. 답변 하나가 분류 문제 하나이고, 정답은 "이 답을 쓴 모델"(GPT, Claude, Gemini 중 하나)이다. 예시는 test에 들어간 질문 <b>"'오지랖이 넓다'란 무슨 뜻인가요?"</b>에 대한 세 교사의 실제 답이다. <span class="rm">표시한 부분</span>은 정규화(4.6)에서 지워지는 서식이다(⏎ = 줄바꿈).</p>
+  <div class="tw"><table class=""><thead><tr><th style="width:9%">모델</th><th style="width:48%">원문 (raw)</th><th>정규화 후 (norm)</th></tr></thead><tbody>
+  <tr><td><b>GPT</b><br><span class="m">165자</span></td><td><span class="rm">‘</span>오지랖이 넓다<span class="rm">’</span>는 남의 일에 필요 이상으로 관심을 가지거나, 부탁받지 않았는데도 참견하는 성향을 뜻합니다. 대체로 부정적인 뉘앙스가 있습니다.<span class="rm">⏎⏎</span><br><br>예: <span class="rm">“</span>그 사람은 남의 사생활까지 물어봐서 오지랖이 넓어.<span class="rm">”</span><span class="rm">⏎</span><br>다만 상황에 따라 남을 잘 챙기고 적극적으로 돕는다는 뜻으로 가볍게 쓰이기도 합니다.</td><td>오지랖이 넓다는 남의 일에 필요 이상으로 관심을 가지거나, 부탁받지 않았는데도 참견하는 성향을 뜻합니다. 대체로 부정적인 뉘앙스가 있습니다. 예: 그 사람은 남의 사생활까지 물어봐서 오지랖이 넓어. 다만 상황에 따라 남을 잘 챙기고 적극적으로 돕는다는 뜻으로 가볍게 쓰이기도 합니다.</td></tr>
+  <tr><td><b>Claude</b><br><span class="m">437자</span></td><td><span class="rm">'</span>오지랖이 넓다<span class="rm">'</span>는 <span class="rm">**</span>자기와 상관없는 남의 일에 지나치게 간섭하거나 참견한다<span class="rm">**</span>는 뜻의 관용 표현입니다.<span class="rm">⏎⏎</span><br><br><span class="rm">**</span>어원<span class="rm">**⏎</span><br><span class="rm">'</span>오지랖<span class="rm">'</span>은 원래 웃옷이나 윗도리에 입는 겉옷의 앞자락을 가리키는 말입니다. … 의미로 확장되었습니다.<span class="rm">⏎⏎</span><br><br><span class="rm">**</span>쓰임<span class="rm">**⏎</span><br><span class="rm">- "</span>그 친구는 오지랖이 넓어서 남의 집안일까지 다 챙겨.<span class="rm">"⏎</span><br><span class="rm">- "</span>오지랖 좀 그만 부리고 네 일이나 신경 써.<span class="rm">"⏎⏎</span><br><br><span class="rm">**</span>뉘앙스<span class="rm">**⏎</span><br>주로 부정적으로 쓰여 <span class="rm">'</span>주제넘게 참견한다<span class="rm">'</span>는 비판의 느낌이 강합니다. …<span class="rm">⏎⏎</span><br><br><span class="rm">**</span>참고<span class="rm">**⏎</span><br><span class="rm">'</span>오지랖이 넓다<span class="rm">'</span>는 … 표준어는 <span class="rm">'</span>오지랖<span class="rm">'</span>입니다.</td><td>오지랖이 넓다는 자기와 상관없는 남의 일에 지나치게 간섭하거나 참견한다는 뜻의 관용 표현입니다. 어원 오지랖은 원래 웃옷이나 윗도리에 입는 겉옷의 앞자락을 가리키는 말입니다. … 의미로 확장되었습니다. 쓰임 그 친구는 오지랖이 넓어서 남의 집안일까지 다 챙겨. 오지랖 좀 그만 부리고 네 일이나 신경 써. 뉘앙스 주로 부정적으로 쓰여 주제넘게 참견한다는 비판의 느낌이 강합니다. … 참고 오지랖이 넓다는 … 표준어는 오지랖입니다.</td></tr>
+  <tr><td><b>Gemini</b><br><span class="m">288자</span></td><td><span class="rm">'</span>오지랖이 넓다<span class="rm">'</span>는 <span class="rm">**</span>자신과 상관없는 일이나 다른 사람의 일에 지나치게 참견하고 간섭한다<span class="rm">**</span>는 뜻의 관용 표현입니다.<span class="rm">⏎⏎</span><br><br><span class="rm">* **</span>유래:<span class="rm">**</span> <span class="rm">'</span>오지랖<span class="rm">'</span>은 원래 한복 등 웃옷의 앞자락을 가리킵니다. 옷의 앞자락이 넓으면 … 비유한 말입니다.<span class="rm">⏎</span><br><span class="rm">* **</span>뉘앙스:<span class="rm">**</span> 때로는 정이 많거나 주변을 잘 챙긴다는 의미로 쓰이기도 하지만, 대체로 … 부정적인 의미(참견이 심함, 눈치가 없음)로 많이 사용됩니다.</td><td>오지랖이 넓다는 자신과 상관없는 일이나 다른 사람의 일에 지나치게 참견하고 간섭한다는 뜻의 관용 표현입니다. 유래: 오지랖은 원래 한복 등 웃옷의 앞자락을 가리킵니다. 옷의 앞자락이 넓으면 … 비유한 말입니다. 뉘앙스: 때로는 정이 많거나 주변을 잘 챙긴다는 의미로 쓰이기도 하지만, 대체로 … 부정적인 의미(참견이 심함, 눈치가 없음)로 많이 사용됩니다.</td></tr>
+  </tbody></table></div>
+  <p class="m">표 4-1. 같은 질문에 대한 세 교사의 답(긴 문장은 …로 줄임, 글자 수는 원문 기준). 같은 시스템 프롬프트로 생성했다.</p>
+  <ul>
+    <li><b>원문에서 눈에 띄는 차이:</b> GPT는 굽은 따옴표(‘ ’ “ ”)를 쓰고 소제목 없이 짧은 문단으로 쓴다. Claude는 <b>**어원**, **쓰임**</b> 같은 굵은 소제목과 "-" 목록, 곧은 따옴표(" ')를 쓰고 "참고"로 마무리한다. Gemini는 "*" 목록 안에 <b>**유래:**</b>처럼 굵은 글씨와 쌍점을 붙인다.</li>
+    <li><b>정규화 후에도 남는 차이:</b> 서식을 지워도 GPT의 "대체로", "다만", "예:", Claude의 소제목 단어("어원 … 쓰임 … 참고"), Gemini의 "유래: … 뉘앙스:"와 괄호 보충 설명 "(참견이 심함, 눈치가 없음)"이 남는다. 정규화 실험은 이런 <b>어휘·어미·문장 구성</b>만으로도 구별되는지를 묻는다.</li>
+  </ul>
+
+  <h3>4.3 질문 단위 분할: 왜 질문으로 나누는가</h3>
+  <p>머신러닝에서는 자료를 세 부분으로 나눈다. <b>train</b>(교과서: 분류기가 보고 배움), <b>val</b>(모의고사: 설정을 고를 때만 씀), <b>test</b>(수능: 마지막에 단 한 번만 풀어 실력을 잼). test를 설정 고르기에 쓰면 test에 맞춘 설정이 되어 실력이 부풀려지므로, test는 끝까지 보지 않는다.</p>
+<pre>질문 1,199개를 무작위로 섞음(seed 42) → 70% / 15% / 15%
+  train  질문 839개 × 답 3 = 답변 2,517개   (GPT 839, Claude 839, Gemini 839)
+  val    질문 179개 × 답 3 = 답변   537개   (각 179)
+  test   질문 181개 × 답 3 = 답변   543개   (각 181)   ← 예: "오지랖" 질문의 세 답은 모두 test</pre>
+  <ul>
+    <li><b>답변 단위로 나누면 생기는 문제:</b> 같은 질문의 GPT 답은 train에, Claude 답은 test에 들어갈 수 있다. 그러면 분류기는 "오지랖"이라는 <b>질문 주제</b>를 train에서 이미 본 셈이어서, 스타일이 아니라 내용의 기억으로 맞힐 여지가 생긴다.</li>
+    <li><b>질문 단위로 나누면:</b> test의 181개 질문은 분류기가 한 번도 본 적 없는 주제다. 게다가 한 질문의 세 답은 같은 내용을 다루므로 <b>내용으로는 셋을 구별할 수 없다</b>. 분류기는 쓰는 방식(스타일)으로만 맞혀야 한다.</li>
+    <li><b>클래스 균형:</b> 모든 split에서 세 모델이 정확히 1/3씩이므로, 아무렇게나 찍으면 정확도는 33.3%가 된다. 이것이 "우연" 기준선이다.</li>
+  </ul>
+
+  <h3>4.4 분류기 ① 글자 n-gram TF-IDF + 다항 로지스틱 회귀</h3>
+  <p><b>글을 숫자로 바꿔야 하는 이유.</b> 집값을 "비싼 집 / 싼 집"으로 분류하는 로지스틱 회귀는 면적, 방 수, 역까지 거리처럼 <b>숫자로 된 열</b>을 입력으로 받는다. 글은 숫자가 아니므로 먼저 "답변 하나 = 숫자 여러 개가 든 한 행"으로 바꿔야 한다. TF-IDF는 이 변환 방법이고, 열 하나하나가 <b>글자 조각</b>이다.</p>
+  <div class="tw"><table class=""><thead><tr><th></th><th>집값 분류</th><th>이 실험</th></tr></thead><tbody><tr><td>한 행</td><td>집 한 채</td><td>답변 하나</td></tr><tr><td>열(특징)</td><td>면적, 방 수, 역까지 거리 …</td><td>글자 조각 115,353개 각각 (" 다만", "**", "하여", "니다." …)</td></tr><tr><td>칸의 값</td><td>84㎡, 3개, 500m</td><td>그 조각이 그 답변에서 얼마나 두드러지는가 (TF-IDF 값, 대부분 0)</td></tr><tr><td>정답</td><td>비싼 집 / 싼 집 (2개)</td><td>GPT / Claude / Gemini (3개 → <b>다항</b> 로지스틱)</td></tr><tr><td>학습 자료</td><td>집 수천 채</td><td>train 답변 2,517개</td></tr></tbody></table></div>
+  <p><b>1단계, 글자 n-gram으로 자르기.</b> 단어 대신 <b>연속한 글자 2~4개</b>를 하나의 조각(n-gram)으로 센다. 한국어는 "다만", "다만은", "다만도"처럼 어미·조사가 붙어 단어 모양이 계속 바뀌므로, 글자 조각으로 세면 형태소 분석기 없이도 어간·어미·기호를 함께 잡을 수 있다. 단어 경계(공백)도 조각에 포함해 단어의 시작과 끝을 구분한다. 예를 들어 "보통 다만"은 다음 12개 조각이 된다(␣ = 공백).</p>
+<pre>"보통"  → ␣보, 보통, 통␣, ␣보통, 보통␣, ␣보통␣
+"다만"  → ␣다, 다만, 만␣, ␣다만, 다만␣, ␣다만␣
+"**유래:**" → **, *유, 유래, 래:, :*, ** … (마크다운 기호도 조각이 된다)</pre>
+  <p>train 답변 전체에서 나온 조각 중 <b>3개 이상의 답변</b>에 나온 것만 열로 남겼다(min_df = 3). 원문 115,353개, 정규화 111,506개다. 어휘 목록과 IDF는 <b>train에서만</b> 만들고, val·test는 그 목록으로 변환만 한다(test 정보가 학습에 새지 않게).</p>
+  <p><b>2단계, TF-IDF로 값 매기기.</b> 각 칸의 값은 두 숫자의 곱이다.</p>
+<pre>TF  (term frequency)    = 1 + log(이 답변에서 그 조각이 나온 횟수)      많이 나올수록 크지만 log로 완만하게
+IDF (inverse doc. freq.) = log((1 + 전체 답변 수) ÷ (1 + 그 조각이 나온 답변 수)) + 1
+                                                              흔한 조각일수록 작고, 드문 조각일수록 큼
+값 = TF × IDF  →  답변마다 벡터 길이가 1이 되도록 나눔(긴 답이 무조건 큰 값을 갖지 않게)</pre>
+  <div class="tw"><table class=""><thead><tr><th>GPT의 "오지랖" 답변 속 조각</th><th class="num">이 답에서 횟수</th><th class="num">IDF</th><th class="num">최종 TF-IDF 값</th><th>뜻</th></tr></thead><tbody><tr><td>"남의"</td><td class='num'>2</td><td class='num'>6.75</td><td class='num'>0.143</td><td>드문 조각 → 값이 큼 (하지만 주제 단어다)</td></tr><tr><td>" “" (굽은 따옴표)</td><td class='num'>1</td><td class='num'>3.21</td><td class='num'>0.040</td><td>중간 정도로 드문 조각</td></tr><tr><td>"다만"</td><td class='num'>1</td><td class='num'>2.18</td><td class='num'>0.027</td><td>꽤 흔한 조각</td></tr><tr><td>"니다."</td><td class='num'>3</td><td class='num'>1.00</td><td class='num'>0.026</td><td>거의 모든 답변에 나옴 → IDF 최소</td></tr></tbody></table></div>
+  <p class="m">표 4-2. 실제 계산값(train 답변 2,517개 기준). 이 답변은 115,353칸 중 264칸만 0이 아니다.</p>
+  <p><b>3단계, 다항 로지스틱 회귀로 점수 매기기.</b> 모델마다 가중치 벡터(115,353개 숫자)가 하나씩 있다. 답변 벡터 x와 각 가중치를 곱해 더한 것이 그 모델의 점수이고, 점수를 softmax로 확률로 바꿔 가장 높은 모델을 답으로 고른다.</p>
+<pre>점수_GPT    = Σ (가중치_GPT,조각    × 그 조각의 TF-IDF 값) + 절편
+점수_Claude = Σ (가중치_Claude,조각 × …) + 절편
+점수_Gemini = Σ (가중치_Gemini,조각 × …) + 절편
+P(GPT) = e^점수_GPT ÷ (e^점수_GPT + e^점수_Claude + e^점수_Gemini)
+
+예) GPT의 "오지랖" 답변: 점수 GPT 3.24, Claude −1.88, Gemini −1.36
+    → P = GPT 98.4%, Claude 0.6%, Gemini 1.0%  → "GPT"로 예측 (정답)
+    가장 큰 근거: " “"(굽은 따옴표) 가중치 GPT +6.53 / Claude −3.84 / Gemini −2.69
+    반면 "남의"의 가중치는 −0.01 / +0.06 / −0.05로 거의 0 → 주제 단어는 무시됨</pre>
+  <p><b>4단계, 학습.</b> 학습은 train 답변 2,517개에서 <b>정답 모델의 확률이 최대가 되도록</b>(로그우도 최대화) 가중치를 조정하는 것이다. 이때 TF-IDF 값이 컸던 "남의" 같은 주제 단어는 세 모델 모두에 고르게 나오므로 구별에 도움이 안 되어 가중치가 0 근처로 남고, 특정 모델에만 자주 나오는 조각의 가중치가 커진다. 가중치가 가장 큰 조각은 원문에서 GPT "“ ‘ 보통 다만", Claude "- ** " 고,", Gemini "' * :** 하여"였고, 정규화 후에는 GPT "보통 즉 다만", Claude "고, 참고 정리", Gemini "하여 및 적인"이었다.</p>
+  <p><b>5단계, 규제 강도 C를 val로 고르기.</b> 조각이 11만 개가 넘어 train 답변을 통째로 외워 버리기 쉽다(과적합). 그래서 가중치가 너무 커지지 않게 벌점(L2 규제)을 준다. C는 그 벌점의 반대(클수록 규제가 약함)다. C ∈ {0.25, 1, 4, 16, 64, 256}으로 각각 학습하고 val 정확도가 가장 높은 값을 골랐다: 원문 C = 16(val 98.1%), 정규화 C = 64(val 94.2%). 고른 모델로 test를 한 번 평가했다.</p>
+
+  <h3>4.5 분류기 ② KLUE-RoBERTa 미세조정</h3>
+  <p><b>로지스틱과의 차이.</b> TF-IDF는 글자 조각이 <b>몇 번 나왔는지</b>만 보고 순서와 문맥은 버린다. KLUE-RoBERTa는 한국어 텍스트로 미리 학습된 언어 모델(사전학습 인코더, 약 1.1억 파라미터)로, 문장을 <b>단어 순서와 앞뒤 문맥까지</b> 읽고 이해한 표현을 만든다. 정규화로 기호를 지워도 "어떤 순서로 무엇을 말하는가"를 볼 수 있다.</p>
+  <ol>
+    <li><b>토큰화:</b> 답변을 하위 단어(subword) 토큰으로 자른다. 최대 512토큰까지 넣고, 이를 넘는 답변 2개(원문)는 뒷부분을 잘랐다.</li>
+    <li><b>분류 머리 붙이기:</b> 문장 맨 앞 [CLS] 위치의 출력(768개 숫자, 답변 전체의 요약)에 출력이 3개인 층을 붙여 GPT·Claude·Gemini 점수를 내고 softmax로 확률을 만든다.</li>
+    <li><b>미세조정:</b> 정답 모델의 확률이 커지도록(교차 엔트로피 최소화) 사전학습된 가중치 전체와 분류 머리를 함께 조금씩 바꾼다. 4 epoch, 학습률 2e-5(warmup 10% 후 선형 감소), weight decay 0.01, 실효 배치 16(8 × 누적 2), 1 epoch = 158 step, 총 632 step, seed 42.</li>
+    <li><b>체크포인트 고르기:</b> 25 step마다 val 정확도를 재고 가장 높은 시점의 모델을 고른다: 원문 step 275(val 98.5%), 정규화 step 525(val 98.3%). 로지스틱의 C 선택과 같은 역할이다.</li>
+    <li><b>시험:</b> 고른 모델로 test 543개를 한 번 분류한다.</li>
+  </ol>
+
+  <h3>4.6 통제 실험: 정규화로 "겉모양" 지우기</h3>
+  <p>원문으로만 구별되면 "굵게·목록 같은 서식 습관만 다르다"는 해석이 가능하다. 그래서 서식을 모두 지운 텍스트로 같은 실험을 다시 했다. 지운 것은 다음 네 가지다(<code>common.normalize</code>).</p>
+  <div class="tw"><table class=""><thead><tr><th>지운 것</th><th>예 (원문 → 정규화)</th></tr></thead><tbody><tr><td>마크다운 강조 기호 ** __ `</td><td><b>**어원**</b> → 어원</td></tr><tr><td>줄 맨 앞의 소제목·목록 기호 # - * • 1. 1)</td><td>* **유래:** … → 유래: …</td></tr><tr><td>모든 따옴표 “ ” ‘ ’ " '</td><td>‘오지랖이 넓다’는 → 오지랖이 넓다는</td></tr><tr><td>줄바꿈과 연속 공백 → 공백 하나</td><td>문단·목록 구조가 한 줄로 이어짐</td></tr></tbody></table></div>
+  <p>단어, 어미, 쉼표·쌍점·괄호, 문장 순서는 그대로 남는다. 표 4-1의 "오지랖" 예에서 정규화 후 로지스틱은 Gemini 답을 <b>GPT로 틀렸다</b>(GPT 64%, Gemini 18%). "* **유래:**" 같은 Gemini 서식 단서가 사라졌기 때문이다. 같은 답을 RoBERTa는 정규화 후에도 Gemini 99.8%로 맞혔다. 문맥을 읽는 분류기는 서식이 없어도 문장 구성으로 구별한다는 뜻이다.</p>
+
+  <h3>4.7 평가 지표: 정확도와 F1 점수</h3>
+  <p>test 답변 543개(모델마다 181개)의 예측을 실제 모델과 맞대어 센 <b>혼동행렬</b>에서 두 지표를 계산한다. 아래는 로지스틱 회귀 · 원문의 실제 결과다.</p>
+  <div class="tw"><table class=""><thead><tr><th>실제 \ 예측</th><th class="num">GPT로 예측</th><th class="num">Claude로 예측</th><th class="num">Gemini로 예측</th><th class="num">합계</th></tr></thead><tbody><tr><td>실제 GPT</td><td class='num'><b>171</b></td><td class='num'>6</td><td class='num'>4</td><td class='num'>181</td></tr><tr><td>실제 Claude</td><td class='num'>0</td><td class='num'><b>179</b></td><td class='num'>2</td><td class='num'>181</td></tr><tr><td>실제 Gemini</td><td class='num'>1</td><td class='num'>2</td><td class='num'><b>178</b></td><td class='num'>181</td></tr><tr><td>합계</td><td class='num'>172</td><td class='num'>187</td><td class='num'>184</td><td class='num'>543</td></tr></tbody></table></div>
+  <p class="m">표 4-3. 혼동행렬(로지스틱 회귀 · 원문 · test). 대각선(굵게) = 맞힌 개수.</p>
+<pre>정확도 (accuracy) = 맞힌 답변 수 ÷ 전체 = (171 + 179 + 178) ÷ 543 = 97.2%
+
+GPT의 정밀도 (precision) = GPT라고 예측한 것 중 진짜 GPT  = 171 ÷ 172 = 0.994   (열 방향)
+GPT의 재현율 (recall)    = 진짜 GPT 중 GPT로 찾아낸 것     = 171 ÷ 181 = 0.945   (행 방향)
+GPT의 F1 = 2 × 정밀도 × 재현율 ÷ (정밀도 + 재현율)
+         = 2 × 0.994 × 0.945 ÷ (0.994 + 0.945) = 0.969
+
+Claude: 정밀도 179 ÷ 187 = 0.957, 재현율 179 ÷ 181 = 0.989 → F1 0.973
+Gemini: 정밀도 178 ÷ 184 = 0.967, 재현율 178 ÷ 181 = 0.983 → F1 0.975</pre>
+  <ul>
+    <li><b>왜 정확도인가:</b> 세 모델이 test에 정확히 181개씩 있어(클래스 균형) 정확도가 치우침 없이 전체 실력을 나타내고, "우연 = 33.3%"라는 분명한 기준선과 바로 비교할 수 있다. 질문 단위 부트스트랩(질문 181개를 복원추출해 1,000번 재계산)으로 95% 신뢰구간도 구했다.</li>
+    <li><b>왜 F1을 함께 보나:</b> 정확도는 세 모델을 합친 평균이라, 특정 모델 하나를 계속 헷갈려도 가려질 수 있다. 극단적으로 모든 답을 "GPT"라고 하는 분류기는 정확도 33.3%이고 GPT 재현율은 100%지만, GPT 정밀도는 33%, Claude·Gemini의 F1은 0이다. 모델별 F1은 "그 모델이라고 말했을 때 믿을 만한가(정밀도)"와 "그 모델의 답을 빠짐없이 찾는가(재현율)"를 함께 본다. 조화평균이라 둘 중 하나만 낮아도 F1이 크게 떨어진다.</li>
+    <li><b>이 실험에서 읽을 점:</b> 모든 실험에서 세 모델의 F1이 0.91 이상으로 고르다(그림 4-2). 한 모델만 잘 구별되는 것이 아니라 <b>세 모델이 서로 모두 구별</b>된다는 뜻이다. 표 4-3에서 가장 많은 실수는 GPT 답을 Claude로 본 6개다.</li>
+  </ul>
+
+  <h3>4.8 결과</h3>
+  <div class="cols"><div>
+  <div class="tw"><table class=""><thead><tr><th>분류기</th><th>텍스트</th><th class="num">test 정확도</th><th class="num">95% CI</th><th class="num">GPT F1</th><th class="num">Claude F1</th><th class="num">Gemini F1</th></tr></thead><tbody><tr><td>다항 로지스틱 회귀</td><td>원문</td><td class='num'><b>97.2%</b></td><td class='num'>95.6–98.5%</td><td class='num'>0.969</td><td class='num'>0.973</td><td class='num'>0.975</td></tr><tr><td>다항 로지스틱 회귀</td><td>정규화</td><td class='num'><b>92.1%</b></td><td class='num'>89.5–94.3%</td><td class='num'>0.910</td><td class='num'>0.914</td><td class='num'>0.938</td></tr><tr><td>KLUE-RoBERTa</td><td>원문</td><td class='num'><b>97.1%</b></td><td class='num'>95.6–98.3%</td><td class='num'>0.978</td><td class='num'>0.967</td><td class='num'>0.967</td></tr><tr><td>KLUE-RoBERTa</td><td>정규화</td><td class='num'><b>96.5%</b></td><td class='num'>94.8–97.8%</td><td class='num'>0.959</td><td class='num'>0.978</td><td class='num'>0.959</td></tr></tbody></table></div>
+  </div><div>
+  <figure><svg class="chart" viewBox="0 0 640 196" role="img" aria-label="가로 막대 그림" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><line x1="170" x2="570" y1="170" y2="170" class="axis"/><line x1="170.0" x2="170.0" y1="8" y2="170" class="grid"/><text x="170.0" y="186" class="tick" text-anchor="middle">0%</text><line x1="270.0" x2="270.0" y1="8" y2="170" class="grid"/><text x="270.0" y="186" class="tick" text-anchor="middle">25%</text><line x1="370.0" x2="370.0" y1="8" y2="170" class="grid"/><text x="370.0" y="186" class="tick" text-anchor="middle">50%</text><line x1="470.0" x2="470.0" y1="8" y2="170" class="grid"/><text x="470.0" y="186" class="tick" text-anchor="middle">75%</text><line x1="570.0" x2="570.0" y1="8" y2="170" class="grid"/><text x="570.0" y="186" class="tick" text-anchor="middle">100%</text><text x="160" y="32.0" class="lab" text-anchor="end">로지스틱 회귀 · 원문</text><rect x="170" y="14" width="388.79999999999995" height="26" rx="4" fill="var(--c-neutral)"><title>로지스틱 회귀 · 원문: 97.2%</title></rect><line x1="552.4" x2="564.0" y1="27.0" y2="27.0" class="ci"/><line x1="552.4" x2="552.4" y1="21" y2="33" class="ci"/><line x1="564.0" x2="564.0" y1="21" y2="33" class="ci"/><text x="572.0" y="32.0" class="val">97.2%</text><text x="160" y="70.0" class="lab" text-anchor="end">로지스틱 회귀 · 정규화</text><rect x="170" y="52" width="368.4" height="26" rx="4" fill="var(--c-neutral)"><title>로지스틱 회귀 · 정규화: 92.1%</title></rect><line x1="528.0" x2="547.2" y1="65.0" y2="65.0" class="ci"/><line x1="528.0" x2="528.0" y1="59" y2="71" class="ci"/><line x1="547.2" x2="547.2" y1="59" y2="71" class="ci"/><text x="555.2" y="70.0" class="val">92.1%</text><text x="160" y="108.0" class="lab" text-anchor="end">KLUE-RoBERTa · 원문</text><rect x="170" y="90" width="388.4" height="26" rx="4" fill="var(--c-neutral)"><title>KLUE-RoBERTa · 원문: 97.1%</title></rect><line x1="552.4" x2="563.2" y1="103.0" y2="103.0" class="ci"/><line x1="552.4" x2="552.4" y1="97" y2="109" class="ci"/><line x1="563.2" x2="563.2" y1="97" y2="109" class="ci"/><text x="571.2" y="108.0" class="val">97.1%</text><text x="160" y="146.0" class="lab" text-anchor="end">KLUE-RoBERTa · 정규화</text><rect x="170" y="128" width="386.0" height="26" rx="4" fill="var(--c-neutral)"><title>KLUE-RoBERTa · 정규화: 96.5%</title></rect><line x1="549.2" x2="561.2" y1="141.0" y2="141.0" class="ci"/><line x1="549.2" x2="549.2" y1="135" y2="147" class="ci"/><line x1="561.2" x2="561.2" y1="135" y2="147" class="ci"/><text x="569.2" y="146.0" class="val">96.5%</text><line x1="303.2" x2="303.2" y1="6" y2="170" class="ref"/><text x="307.2" y="12" class="refl">우연 33.3%</text></svg><figcaption>그림 4-1. 답변만 보고 생성 모델을 맞힌 test 정확도와 95% 신뢰구간(test 질문 181개 × 3 = 답변 543개, 질문 단위 bootstrap). 정규화 = 굵게·목록·따옴표·줄바꿈을 모두 지운 텍스트.</figcaption></figure>
+  <figure><div class="legend"><span><i style="background:var(--c-gpt)"></i>GPT</span><span><i style="background:var(--c-claude)"></i>Claude</span><span><i style="background:var(--c-gemini)"></i>Gemini</span></div><svg class="chart" viewBox="0 0 640 280" role="img" aria-label="묶음 막대 그림" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><line x1="52" x2="628" y1="234.0" y2="234.0" class="grid"/><text x="46" y="238.0" class="tick" text-anchor="end">0.80</text><line x1="52" x2="628" y1="181.00000000000006" y2="181.00000000000006" class="grid"/><text x="46" y="185.00000000000006" class="tick" text-anchor="end">0.85</text><line x1="52" x2="628" y1="128.0" y2="128.0" class="grid"/><text x="46" y="132.0" class="tick" text-anchor="end">0.90</text><line x1="52" x2="628" y1="75.00000000000006" y2="75.00000000000006" class="grid"/><text x="46" y="79.00000000000006" class="tick" text-anchor="end">0.95</text><line x1="52" x2="628" y1="22.0" y2="22.0" class="grid"/><text x="46" y="26.0" class="tick" text-anchor="end">1.00</text><line x1="52" x2="628" y1="234.0" y2="234.0" class="axis"/><rect x="71.0" y="54.86000000000004" width="34" height="179.13999999999996" rx="3" fill="var(--c-gpt)"><title>로지스틱 원문 · GPT: 0.97</title></rect><text x="88.0" y="49.86000000000004" class="val" text-anchor="middle">0.97</text><rect x="107.0" y="50.62000000000003" width="34" height="183.37999999999997" rx="3" fill="var(--c-claude)"><title>로지스틱 원문 · Claude: 0.97</title></rect><text x="124.0" y="45.62000000000003" class="val" text-anchor="middle">0.97</text><rect x="143.0" y="48.50000000000003" width="34" height="185.49999999999997" rx="3" fill="var(--c-gemini)"><title>로지스틱 원문 · Gemini: 0.97</title></rect><text x="160.0" y="43.50000000000003" class="val" text-anchor="middle">0.97</text><text x="124.0" y="254" class="lab" text-anchor="middle">로지스틱 원문</text><rect x="215.0" y="117.39999999999999" width="34" height="116.60000000000001" rx="3" fill="var(--c-gpt)"><title>로지스틱 정규화 · GPT: 0.91</title></rect><text x="232.0" y="112.39999999999999" class="val" text-anchor="middle">0.91</text><rect x="251.0" y="113.15999999999998" width="34" height="120.84000000000002" rx="3" fill="var(--c-claude)"><title>로지스틱 정규화 · Claude: 0.91</title></rect><text x="268.0" y="108.15999999999998" class="val" text-anchor="middle">0.91</text><rect x="287.0" y="87.72000000000008" width="34" height="146.27999999999992" rx="3" fill="var(--c-gemini)"><title>로지스틱 정규화 · Gemini: 0.94</title></rect><text x="304.0" y="82.72000000000008" class="val" text-anchor="middle">0.94</text><text x="268.0" y="254" class="lab" text-anchor="middle">로지스틱 정규화</text><rect x="359.0" y="45.32000000000002" width="34" height="188.67999999999998" rx="3" fill="var(--c-gpt)"><title>RoBERTa 원문 · GPT: 0.98</title></rect><text x="376.0" y="40.32000000000002" class="val" text-anchor="middle">0.98</text><rect x="395.0" y="56.98000000000002" width="34" height="177.01999999999998" rx="3" fill="var(--c-claude)"><title>RoBERTa 원문 · Claude: 0.97</title></rect><text x="412.0" y="51.98000000000002" class="val" text-anchor="middle">0.97</text><rect x="431.0" y="56.98000000000002" width="34" height="177.01999999999998" rx="3" fill="var(--c-gemini)"><title>RoBERTa 원문 · Gemini: 0.97</title></rect><text x="448.0" y="51.98000000000002" class="val" text-anchor="middle">0.97</text><text x="412.0" y="254" class="lab" text-anchor="middle">RoBERTa 원문</text><rect x="503.0" y="65.46000000000004" width="34" height="168.53999999999996" rx="3" fill="var(--c-gpt)"><title>RoBERTa 정규화 · GPT: 0.96</title></rect><text x="520.0" y="60.460000000000036" class="val" text-anchor="middle">0.96</text><rect x="539.0" y="45.32000000000002" width="34" height="188.67999999999998" rx="3" fill="var(--c-claude)"><title>RoBERTa 정규화 · Claude: 0.98</title></rect><text x="556.0" y="40.32000000000002" class="val" text-anchor="middle">0.98</text><rect x="575.0" y="65.46000000000004" width="34" height="168.53999999999996" rx="3" fill="var(--c-gemini)"><title>RoBERTa 정규화 · Gemini: 0.96</title></rect><text x="592.0" y="60.460000000000036" class="val" text-anchor="middle">0.96</text><text x="556.0" y="254" class="lab" text-anchor="middle">RoBERTa 정규화</text></svg><figcaption>그림 4-2. 생성 모델별 F1 점수. 어느 모델도 특별히 헷갈리지 않고 세 모델 모두 0.91 이상으로 구별된다.</figcaption></figure>
+  </div></div>
+  <div class="cols"><div>
+  <figure><div class="legend"><span><i style="background:var(--c-gpt)"></i>GPT</span><span><i style="background:var(--c-claude)"></i>Claude</span><span><i style="background:var(--c-gemini)"></i>Gemini</span></div><svg class="chart" viewBox="0 0 640 290" role="img" aria-label="묶음 막대 그림" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><line x1="52" x2="628" y1="244.0" y2="244.0" class="grid"/><text x="46" y="248.0" class="tick" text-anchor="end">0</text><line x1="52" x2="628" y1="188.5" y2="188.5" class="grid"/><text x="46" y="192.5" class="tick" text-anchor="end">25</text><line x1="52" x2="628" y1="133.0" y2="133.0" class="grid"/><text x="46" y="137.0" class="tick" text-anchor="end">50</text><line x1="52" x2="628" y1="77.5" y2="77.5" class="grid"/><text x="46" y="81.5" class="tick" text-anchor="end">75</text><line x1="52" x2="628" y1="22.0" y2="22.0" class="grid"/><text x="46" y="26.0" class="tick" text-anchor="end">100</text><line x1="52" x2="628" y1="244.0" y2="244.0" class="axis"/><rect x="62.0" y="72.7322768974145" width="24.0" height="171.2677231025855" rx="3" fill="var(--c-gpt)"><title>굵게 · GPT: 77</title></rect><text x="74.0" y="67.7322768974145" class="val" text-anchor="middle">77</text><rect x="88.0" y="29.77648040033361" width="24.0" height="214.2235195996664" rx="3" fill="var(--c-claude)"><title>굵게 · Claude: 96</title></rect><text x="100.0" y="24.77648040033361" class="val" text-anchor="middle">96</text><rect x="114.0" y="48.47706422018345" width="24.0" height="195.52293577981655" rx="3" fill="var(--c-gemini)"><title>굵게 · Gemini: 88</title></rect><text x="126.0" y="43.47706422018345" class="val" text-anchor="middle">88</text><text x="100.0" y="264" class="lab" text-anchor="middle">굵게</text><rect x="158.0" y="141.97998331943285" width="24.0" height="102.02001668056715" rx="3" fill="var(--c-gpt)"><title>글머리 목록 · GPT: 46</title></rect><text x="170.0" y="136.97998331943285" class="val" text-anchor="middle">46</text><rect x="184.0" y="75.5095913261051" width="24.0" height="168.4904086738949" rx="3" fill="var(--c-claude)"><title>글머리 목록 · Claude: 76</title></rect><text x="196.0" y="70.5095913261051" class="val" text-anchor="middle">76</text><rect x="210.0" y="190.49040867389493" width="24.0" height="53.50959132610507" rx="3" fill="var(--c-gemini)"><title>글머리 목록 · Gemini: 24</title></rect><text x="222.0" y="185.49040867389493" class="val" text-anchor="middle">24</text><text x="196.0" y="264" class="lab" text-anchor="middle">글머리 목록</text><rect x="254.0" y="229.55796497080902" width="24.0" height="14.442035029190976" rx="3" fill="var(--c-gpt)"><title>번호 목록 · GPT: 7</title></rect><text x="266.0" y="224.55796497080902" class="val" text-anchor="middle">7</text><rect x="280.0" y="190.49040867389493" width="24.0" height="53.50959132610507" rx="3" fill="var(--c-claude)"><title>번호 목록 · Claude: 24</title></rect><text x="292.0" y="185.49040867389493" class="val" text-anchor="middle">24</text><rect x="306.0" y="134.3886572143453" width="24.0" height="109.6113427856547" rx="3" fill="var(--c-gemini)"><title>번호 목록 · Gemini: 49</title></rect><text x="318.0" y="129.3886572143453" class="val" text-anchor="middle">49</text><text x="292.0" y="264" class="lab" text-anchor="middle">번호 목록</text><rect x="350.0" y="141.60967472894077" width="24.0" height="102.39032527105923" rx="3" fill="var(--c-gpt)"><title>영문 괄호 · GPT: 46</title></rect><text x="362.0" y="136.60967472894077" class="val" text-anchor="middle">46</text><rect x="376.0" y="116.79899916597164" width="24.0" height="127.20100083402836" rx="3" fill="var(--c-claude)"><title>영문 괄호 · Claude: 57</title></rect><text x="388.0" y="111.79899916597164" class="val" text-anchor="middle">57</text><rect x="402.0" y="94.58048373644706" width="24.0" height="149.41951626355294" rx="3" fill="var(--c-gemini)"><title>영문 괄호 · Gemini: 67</title></rect><text x="414.0" y="89.58048373644706" class="val" text-anchor="middle">67</text><text x="388.0" y="264" class="lab" text-anchor="middle">영문 괄호</text><rect x="446.0" y="243.25938281901585" width="24.0" height="1" rx="3" fill="var(--c-gpt)"><title>요약 마무리 · GPT: 0</title></rect><text x="458.0" y="238.25938281901585" class="val" text-anchor="middle">0</text><rect x="472.0" y="214.0050041701418" width="24.0" height="29.994995829858198" rx="3" fill="var(--c-claude)"><title>요약 마무리 · Claude: 14</title></rect><text x="484.0" y="209.0050041701418" class="val" text-anchor="middle">14</text><rect x="498.0" y="239.5562969140951" width="24.0" height="4.4437030859049" rx="3" fill="var(--c-gemini)"><title>요약 마무리 · Gemini: 2</title></rect><text x="510.0" y="234.5562969140951" class="val" text-anchor="middle">2</text><text x="484.0" y="264" class="lab" text-anchor="middle">요약 마무리</text><rect x="542.0" y="98.83903252710593" width="24.0" height="145.16096747289407" rx="3" fill="var(--c-gpt)"><title>완곡 표현 · GPT: 65</title></rect><text x="554.0" y="93.83903252710593" class="val" text-anchor="middle">65</text><rect x="568.0" y="118.46538782318598" width="24.0" height="125.53461217681402" rx="3" fill="var(--c-claude)"><title>완곡 표현 · Claude: 57</title></rect><text x="580.0" y="113.46538782318598" class="val" text-anchor="middle">57</text><rect x="594.0" y="170.86405337781486" width="24.0" height="73.13594662218514" rx="3" fill="var(--c-gemini)"><title>완곡 표현 · Gemini: 33</title></rect><text x="606.0" y="165.86405337781486" class="val" text-anchor="middle">33</text><text x="580.0" y="264" class="lab" text-anchor="middle">완곡 표현</text></svg><figcaption>그림 4-3. 교사 답변 3,597개에서 각 형식·문체 특징이 나타난 답변 비율(%). 같은 질문, 같은 시스템 프롬프트로 생성했다.</figcaption></figure>
+  </div><div>
+  <h3>결과 해석</h3>
+  <ul>
+    <li><b>답변만으로 생성 모델이 거의 완벽하게 구별된다:</b> 원문 97.2%(로지스틱), 97.1%(RoBERTa). 우연 33.3%의 약 3배.</li>
+    <li><b>서식을 지워도 구별된다:</b> 정규화 텍스트에서도 92.1%, 96.5%. 정규화에서 RoBERTa가 로지스틱보다 높아, 단어 빈도를 넘어선 <b>문장 수준의 뉘앙스 차이</b>도 있다.</li>
+    <li><b>세 모델의 프로필:</b> GPT는 짧고 완곡한 문단형(중앙값 380자, 완곡 표현 65%), Claude는 길고 구조화된 목록형(587자, 글머리 목록 76%, "정리하면" 마무리), Gemini는 번호로 나눈 설명형(482자, 번호 목록 49%, 영문 괄호 병기 67%).</li>
+  </ul>
+  <div class="note"><b>결론.</b> 세 LLM의 한국어 답변은 형식뿐 아니라 어휘와 뉘앙스에서도 통계적으로 구별되는 서로 다른 분포를 가진다. 학생이 이 차이를 물려받는다면, 평가자가 자기 계열 답을 알아볼 단서가 존재한다 → <b>선호 누출의 전제 조건이 충족</b>된다.</div>
+  </div></div>
+</section>
+
+<section id="s5"><h2><span class="no">5</span>학생 모델 학습 (SFT)</h2>
+
+  <h3>5.1 학습 과정</h3>
+  <div class="cols"><div>
+  <ul>
+    <li><b>시작 모델:</b> Qwen3-0.6B-Base. 대화 스타일이 없는 Base 모델이라 학생의 스타일은 교사에게서 왔다고 말할 수 있다.</li>
+    <li><b>학생 15명 = 교사 3 × seed 5 (42~46).</b> 같은 교사 안에서는 학습 무작위성(데이터 순서, dropout)만 바꿔 다섯 번 학습했다. 교사 간에는 답변 외의 모든 조건이 같다.</li>
+    <li><b>형식:</b> ChatML(시스템 프롬프트 + 질문 + 교사 답 + 종료 토큰). 시스템 프롬프트와 질문은 손실에서 가리고(-100) <b>교사 답만 학습</b>한다.</li>
+  </ul>
+  </div><div>
+  <ul>
+    <li><b>설정(15명 동일):</b> full fine-tuning, AdamW lr 1e-5, cosine(warmup 5%), 실효 배치 16, 3 epoch = 189 step(1 epoch = 63 step), bf16, Colab A100. 15개 run_info의 하이퍼파라미터·데이터 해시가 한 종류임을 확인했다.</li>
+    <li><b>응답 생성:</b> 학습이 끝난 학생이 평가 질문 400개에 greedy 디코딩(반복 억제 1.1, 최대 1,024토큰)으로 답한다. 이 답을 6절에서 평가한다.</li>
+  </ul>
+  </div></div>
+
+  <h3>5.2 loss와 perplexity란 무엇인가</h3>
+  <div class="cols"><div>
+  <p>5절의 지표는 모두 <b>"학생이 이미 쓰여 있는 교사의 답을 얼마나 '자기가 쓸 법한 글'로 보는가"</b>를 잰다. 학생에게 답을 새로 쓰게 하지 않는다. 교사의 답을 한 토큰씩 보여 주면서, 매 위치에서 학생이 <b>실제로 나온 다음 토큰</b>에 준 확률 p를 읽는다.</p>
+  <p><b>loss (교차 엔트로피).</b> 확률을 그대로 평균하지 않고, 각 토큰의 <b>−log p</b>를 평균한다.</p>
+<pre>loss = −(1/N) × Σ log p(y_i | 질문, y₁ … y_(i−1))      N = 답변 토큰 수
+
+p = 1   → −log p = 0      (확신하고 맞힘)
+p = 0.5 → −log p = 0.69
+p = 0.1 → −log p = 2.30   (드물다고 본 토큰일수록 크게 벌점)</pre>
+  <ul>
+    <li><b>왜 log인가:</b> 답 전체가 나올 확률은 토큰 확률의 곱 p₁ × p₂ × … 이다. log를 씌우면 곱이 합이 되고, 토큰 수 N으로 나누면 길이가 다른 답끼리도 비교할 수 있는 "토큰 하나당 평균"이 된다. 학습 때 줄이는 값과 같은 값이다.</li>
+    <li><b>무엇을 계산에 넣나:</b> 시스템 프롬프트와 질문 부분은 빼고(-100), 교사 답변 토큰과 끝 토큰만 넣는다. 질문 199개의 모든 답변 토큰을 하나로 모아 평균한다(토큰 가중 평균).</li>
+  </ul>
+  </div><div>
+  <p><b>작은 예.</b> 답변 토큰이 3개이고 학생이 각 토큰에 0.5, 0.2, 0.1의 확률을 줬다면</p>
+  <div class="tw"><table class=""><thead><tr><th>답변 토큰</th><th class="num">학생이 그 토큰에 준 확률 p</th><th class="num">−log p (그 토큰의 loss)</th></tr></thead><tbody><tr><td>토큰 1</td><td class='num'>0.5</td><td class='num'>0.693</td></tr><tr><td>토큰 2</td><td class='num'>0.2</td><td class='num'>1.609</td></tr><tr><td>토큰 3</td><td class='num'>0.1</td><td class='num'>2.303</td></tr><tr><td><b>평균</b></td><td class='num'>기하평균 0.215</td><td class='num'><b>loss = 1.535</b></td></tr></tbody></table></div>
+<pre>perplexity = e^loss = e^1.535 = 4.64
+           = 1 ÷ (확률의 기하평균 0.215)</pre>
+  <p><b>perplexity(혼란도).</b> loss를 다시 확률 크기로 되돌린 값이다(e<sup>loss</sup>). 뜻은 <b>"학생이 매 토큰마다 평균적으로 몇 개의 후보 중에서 고르는 것만큼 불확실한가"</b>이다.</p>
+  <ul>
+    <li>perplexity 1 = 매번 정답 토큰을 확률 1로 확신(완벽).</li>
+    <li>perplexity 10 = 매번 동등한 후보 10개 중 하나를 고르는 것과 같은 불확실성. 정답 토큰에 평균(기하평균) 1/10 = 0.1의 확률을 줬다는 뜻이기도 하다.</li>
+    <li>loss의 작은 차이가 perplexity에서는 체감되는 차이가 된다. loss 0.1 차이 = perplexity 약 10% 차이.</li>
+  </ul>
+  </div></div>
+
+  <h3>5.3 학습이 잘 되었는가: val loss</h3>
+  <div class="cols"><div>
+  <ul>
+    <li><b>무엇:</b> 학습에 쓰지 않은 질문 199개에서, <b>자기 교사의 답</b>에 대한 loss(5.2).</li>
+    <li><b>언제:</b> 학습 시작 전(step 0), 학습 중 10 step마다(10, 20, …, 180), 마지막 step 189 → 학생마다 20개 시점.</li>
+    <li><b>왜:</b> (1) 학습 전보다 교사의 답을 "자기가 쓸 법한 글"로 보게 되었는지, (2) 같은 데이터를 반복해 보며 외우기만 하는지(과적합)를 보기 위해서다. 모델 선택에는 쓰지 않았다. 15명 모두 같은 시점(마지막 step 189)의 모델을 써야 교사 간 조건이 같기 때문이다.</li>
+  </ul>
+  <div class="tw"><table class=""><thead><tr><th>학생</th><th class="num">학습 전 val loss</th><th class="num">최종 val loss (평균 ± SD)</th><th class="num">감소량</th><th class="num">최저 val (step)</th><th class="num">학습 시간</th></tr></thead><tbody><tr><td>GPT 학생 × 5</td><td class='num'>2.646</td><td class='num'>2.2726 ± 0.0006</td><td class='num'><b>-0.373</b></td><td class='num'>2.233 (120)</td><td class='num'>4.0분</td></tr><tr><td>Claude 학생 × 5</td><td class='num'>2.501</td><td class='num'>2.2025 ± 0.0013</td><td class='num'><b>-0.299</b></td><td class='num'>2.175 (120)</td><td class='num'>4.7분</td></tr><tr><td>Gemini 학생 × 5</td><td class='num'>2.441</td><td class='num'>2.1786 ± 0.0006</td><td class='num'><b>-0.262</b></td><td class='num'>2.144 (120)</td><td class='num'>4.2분</td></tr></tbody></table></div>
+  <p class="m">표 5-1. 교사별 학생 5명(seed)의 val loss. 감소량 = 최종 − 학습 전.</p>
+  <p><b>그림 5-1 읽기.</b> 세 교사 모두 학습 전보다 0.26~0.37 낮아졌다(perplexity로 GPT 14.1 → 9.7, Claude 12.2 → 9.0, Gemini 11.5 → 8.8). step 120(2 epoch 끝 무렵)에서 가장 낮고 3 epoch째에 약간(1~2%) 오르는 가벼운 과적합이 있지만, 학습 전보다 훨씬 낮다. 다섯 seed의 띠가 선과 거의 겹칠 만큼 학습이 안정적이다. 교사 간 절대값은 학습 전부터 다르므로 비교하지 않는다(5.4에서 다룬다).</p>
+  </div><div>
+  <figure><div class="legend"><span><i style="background:var(--c-gpt)"></i>GPT 학생</span><span><i style="background:var(--c-claude)"></i>Claude 학생</span><span><i style="background:var(--c-gemini)"></i>Gemini 학생</span></div><svg class="chart" viewBox="0 0 640 300" role="img" aria-label="선 그림" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><line x1="52" x2="510" y1="256.0" y2="256.0" class="grid"/><text x="46" y="260.0" class="tick" text-anchor="end">2.1</text><line x1="52" x2="510" y1="215.99999999999997" y2="215.99999999999997" class="grid"/><text x="46" y="219.99999999999997" class="tick" text-anchor="end">2.2</text><line x1="52" x2="510" y1="176.0000000000001" y2="176.0000000000001" class="grid"/><text x="46" y="180.0000000000001" class="tick" text-anchor="end">2.3</text><line x1="52" x2="510" y1="136.0000000000001" y2="136.0000000000001" class="grid"/><text x="46" y="140.0000000000001" class="tick" text-anchor="end">2.4</text><line x1="52" x2="510" y1="96.00000000000006" y2="96.00000000000006" class="grid"/><text x="46" y="100.00000000000006" class="tick" text-anchor="end">2.5</text><line x1="52" x2="510" y1="56.00000000000003" y2="56.00000000000003" class="grid"/><text x="46" y="60.00000000000003" class="tick" text-anchor="end">2.6</text><line x1="52" x2="510" y1="16.0" y2="16.0" class="grid"/><text x="46" y="20.0" class="tick" text-anchor="end">2.7</text><text x="52.0" y="274" class="tick" text-anchor="middle">0</text><text x="124.6984126984127" y="274" class="tick" text-anchor="middle">30</text><text x="197.3968253968254" y="274" class="tick" text-anchor="middle">60</text><text x="270.0952380952381" y="274" class="tick" text-anchor="middle">90</text><text x="342.7936507936508" y="274" class="tick" text-anchor="middle">120</text><text x="415.4920634920635" y="274" class="tick" text-anchor="middle">150</text><text x="488.19047619047615" y="274" class="tick" text-anchor="middle">180</text><line x1="204.66666666666666" x2="204.66666666666666" y1="16" y2="256" class="ref"/><text x="208.66666666666666" y="28" class="refl">1 epoch</text><line x1="357.3333333333333" x2="357.3333333333333" y1="16" y2="256" class="ref"/><text x="361.3333333333333" y="28" class="refl">2 epoch</text><line x1="52" x2="510" y1="256" y2="256" class="axis"/><text x="281.0" y="294" class="tick" text-anchor="middle">step</text><polygon points="52.0,37.54148101806646 76.23280423280423,96.8494377136231 100.46560846560845,143.00012207031256 124.6984126984127,161.16418457031256 148.9312169312169,173.26802825927757 173.16402116402116,183.71142959594732 197.3968253968254,191.13778686523443 221.62962962962962,191.03765106201178 245.86243386243385,189.52550506591803 270.0952380952381,195.15437698364263 294.32804232804233,195.19824600219732 318.5608465608465,198.87799835205084 342.7936507936508,201.82876205444342 367.026455026455,200.8747062683106 391.25925925925924,189.40915679931646 415.4920634920635,184.54455947875982 439.7248677248677,185.19982910156256 463.95767195767195,186.22550582885748 488.19047619047615,186.44542312622093 510.0,186.60306549072254 510.0,187.19520187377918 488.19047619047615,187.1922454833985 463.95767195767195,186.95506668090826 439.7248677248677,186.4084205627442 415.4920634920635,186.33231735229498 391.25925925925924,191.22590637207037 367.026455026455,202.3554763793946 342.7936507936508,203.73077011108404 318.5608465608465,201.10349273681646 294.32804232804233,197.45034790039085 270.0952380952381,196.48961639404303 245.86243386243385,191.16973495483404 221.62962962962962,192.7393875122071 197.3968253968254,192.82846069335943 173.16402116402116,184.92402648925787 148.9312169312169,175.65736389160162 124.6984126984127,163.73328781127935 100.46560846560845,146.19741058349598 76.23280423280423,98.58970260620123 52.0,37.54148101806646" fill="var(--c-gpt)" opacity="0.18"/><polyline points="52.0,37.54148101806646 76.23280423280423,97.53577804565444 100.46560846560845,145.04155731201178 124.6984126984127,162.69748306274425 148.9312169312169,174.54400634765625 173.16402116402116,184.51898193359386 197.3968253968254,191.81602096557629 221.62962962962962,191.6155967712402 245.86243386243385,190.2751693725587 270.0952380952381,195.69007492065427 294.32804232804233,196.58855056762704 318.5608465608465,200.31077957153332 342.7936507936508,202.80744171142575 367.026455026455,201.6681632995606 391.25925925925924,190.24749374389648 415.4920634920635,185.4933319091797 439.7248677248677,185.82213973999032 463.95767195767195,186.6299018859864 488.19047619047615,186.93645095825207 510.0,186.95840454101568" fill="none" stroke="var(--c-gpt)" stroke-width="2"><title>GPT 학생</title></polyline><text x="516.0" y="190.95840454101568" class="lab">GPT 학생 2.273</text><polygon points="52.0,95.46880340576178 76.23280423280423,142.33455276489246 100.46560846560845,174.7317276000977 124.6984126984127,191.46489715576178 148.9312169312169,201.41810989379888 173.16402116402116,208.60051727294928 197.3968253968254,215.46783065795904 221.62962962962962,214.36709976196295 245.86243386243385,214.39580535888678 270.0952380952381,219.40230941772467 294.32804232804233,219.93045425415045 318.5608465608465,223.85291671752935 342.7936507936508,225.72507476806646 367.026455026455,224.7211418151856 391.25925925925924,215.2139625549317 415.4920634920635,212.34607315063482 439.7248677248677,213.32273101806646 463.95767195767195,214.10321807861334 488.19047619047615,214.46599578857428 510.0,214.3918952941895 510.0,215.80361938476568 488.19047619047615,215.8212623596192 463.95767195767195,215.71483230590826 439.7248677248677,214.97964477539085 415.4920634920635,213.79241561889654 391.25925925925924,217.26579284667974 367.026455026455,225.86640930175787 342.7936507936508,226.68180084228518 318.5608465608465,224.8369178771973 294.32804232804233,221.86441040039085 270.0952380952381,220.1376876831055 245.86243386243385,216.6492424011231 221.62962962962962,215.4658279418946 197.3968253968254,216.8093643188477 173.16402116402116,210.31865692138678 148.9312169312169,202.7895889282227 124.6984126984127,193.378158569336 100.46560846560845,177.48431777954107 76.23280423280423,144.95610809326178 52.0,95.46880340576178" fill="var(--c-claude)" opacity="0.18"/><polyline points="52.0,95.46880340576178 76.23280423280423,143.80012130737305 100.46560846560845,176.17953872680673 124.6984126984127,192.5912818908692 148.9312169312169,202.20643615722653 173.16402116402116,209.66970062255857 197.3968253968254,216.18718719482428 221.62962962962962,215.08182144165048 245.86243386243385,215.27570343017587 270.0952380952381,219.7375068664552 294.32804232804233,220.92256164550787 318.5608465608465,224.36145401000985 342.7936507936508,226.12298583984384 367.026455026455,225.32676315307626 391.25925925925924,215.8683166503907 415.4920634920635,213.19676971435544 439.7248677248677,214.08252334594732 463.95767195767195,214.74597549438488 488.19047619047615,214.97050857543942 510.0,215.0016174316407" fill="none" stroke="var(--c-claude)" stroke-width="2"><title>Claude 학생</title></polyline><text x="516.0" y="219.0016174316407" class="lab">Claude 학생 2.202</text><polygon points="52.0,119.62279891967779 76.23280423280423,166.18499374389654 100.46560846560845,194.79179000854498 124.6984126984127,208.37955093383795 148.9312169312169,217.9614982604981 173.16402116402116,224.99265289306646 197.3968253968254,230.6413612365723 221.62962962962962,228.09905624389654 245.86243386243385,228.02190399169925 270.0952380952381,231.3634834289551 294.32804232804233,232.95182800292972 318.5608465608465,235.98689651489244 342.7936507936508,237.87135696411136 367.026455026455,236.69766998291018 391.25925925925924,226.24721145629886 415.4920634920635,222.55048370361334 439.7248677248677,223.26564407348636 463.95767195767195,224.060531616211 488.19047619047615,224.30133438110354 510.0,224.30352783203128 510.0,224.87077331542974 488.19047619047615,224.7178993225098 463.95767195767195,224.54242324829104 439.7248677248677,223.87256240844732 415.4920634920635,223.90794372558597 391.25925925925924,227.9215774536133 367.026455026455,238.0653343200684 342.7936507936508,238.982292175293 318.5608465608465,237.49084091186526 294.32804232804233,234.15851211547854 270.0952380952381,232.77654266357425 245.86243386243385,228.6558113098145 221.62962962962962,229.3352088928223 197.3968253968254,231.21337509155276 173.16402116402116,225.64620590209964 148.9312169312169,219.21910858154303 124.6984126984127,210.85919952392584 100.46560846560845,197.21240615844732 76.23280423280423,168.750473022461 52.0,119.62279891967779" fill="var(--c-gemini)" opacity="0.18"/><polyline points="52.0,119.62279891967779 76.23280423280423,167.5885543823243 100.46560846560845,196.37382125854504 124.6984126984127,209.86056900024414 148.9312169312169,218.69727706909177 173.16402116402116,225.41242218017578 197.3968253968254,230.94112014770505 221.62962962962962,228.8226280212402 245.86243386243385,228.31561660766613 270.0952380952381,232.18940353393563 294.32804232804233,233.4557876586915 318.5608465608465,236.84299087524425 342.7936507936508,238.37846374511724 367.026455026455,237.2708854675293 391.25925925925924,227.22995376586925 415.4920634920635,223.29694366455075 439.7248677248677,223.56263732910153 463.95767195767195,224.28746795654297 488.19047619047615,224.52006912231445 510.0,224.56721878051763" fill="none" stroke="var(--c-gemini)" stroke-width="2"><title>Gemini 학생</title></polyline><text x="516.0" y="234.0016174316407" class="lab">Gemini 학생 2.179</text></svg><figcaption>그림 5-1. 학습 중 val loss의 변화. 학습에 쓰지 않은 질문 199개에서 자기 교사의 답에 대한 loss(정의는 5.2). 낮을수록 학생이 교사의 답을 '자기가 쓸 법한 글'로 본다. step 0(학습 전), 10 step마다, 마지막 step 189에 측정. 선은 seed 5개 평균, 옅은 띠는 seed 간 최소~최대(차이가 매우 작아 선과 거의 겹친다). 점선은 epoch 경계.</figcaption></figure>
+  </div></div>
+
+  <h3>5.4 학생이 자기 교사의 스타일을 흡수했는가: 교차 loss</h3>
+  <div class="cols"><div>
+  <p><b>무엇을 쟀나.</b> 5.3의 val loss는 자기 교사의 답만 본다. 교차 loss는 학생 3종(GPT·Claude·Gemini 학생)에게 <b>세 교사의 검증 답변을 모두</b> 보여 주고(3 × 3) 같은 loss를 잰다. "교차"는 다른 교사의 답에도 같은 계산을 한다는 뜻이다.</p>
+  <p><b>왜 했나.</b></p>
+  <ul>
+    <li><b>선호 누출의 전제 확인:</b> 평가자가 자기 계열 학생을 알아보려면, 학생이 "한국어 어시스턴트 답변" 일반이 아니라 <b>그 교사 고유의 말투·형식</b>을 물려받았어야 한다. val loss가 줄었다는 것만으로는 알 수 없다. 세 학생이 공통 형식만 배워도 val loss는 줄기 때문이다.</li>
+    <li><b>val loss끼리는 비교할 수 없다:</b> 학습 전 Qwen부터 교사 답변마다 loss가 다르다(GPT 2.646, Claude 2.501, Gemini 2.441). 그래서 <b>같은 답변을 서로 다른 학생에게</b> 보여 주는 비교가 필요하다.</li>
+    <li><b>API가 필요 없고 결정적이다:</b> 생성하지 않고 확률만 계산하므로 무작위성이 없다. 4절의 "세 교사의 답변 분포가 다르다"는 결과를 학생 쪽에서 같은 관점(확률 분포)으로 확인하는 방법이다.</li>
+  </ul>
+  <p class="m">대상: 각 교사의 검증 답변 199개(답변 토큰 GPT 52,402 · Claude 80,021 · Gemini 65,608개). 학생 15명 × 교사 답변 3종 = 45개 값. 학습 전 값은 step 0의 val loss.</p>
+  </div><div>
+  <div class="tw"><table class=""><thead><tr><th>학생 / 보여 준 답변</th><th class="num">GPT 답변</th><th class="num">Claude 답변</th><th class="num">Gemini 답변</th></tr></thead><tbody><tr><td>학습 전 Qwen</td><td class='num'>2.646<br><span class='m'>ppl 14.10</span></td><td class='num'>2.501<br><span class='m'>ppl 12.20</span></td><td class='num'>2.441<br><span class='m'>ppl 11.48</span></td></tr><tr><td>GPT 학생</td><td class="num own">2.272<br><span class='m'>ppl 9.70</span></td><td class="num">2.370<br><span class='m'>ppl 10.70</span></td><td class="num">2.392<br><span class='m'>ppl 10.93</span></td></tr><tr><td>Claude 학생</td><td class="num">2.383<br><span class='m'>ppl 10.84</span></td><td class="num own">2.202<br><span class='m'>ppl 9.04</span></td><td class="num">2.308<br><span class='m'>ppl 10.05</span></td></tr><tr><td>Gemini 학생</td><td class="num">2.475<br><span class='m'>ppl 11.88</span></td><td class="num">2.386<br><span class='m'>ppl 10.87</span></td><td class="num own">2.178<br><span class='m'>ppl 8.83</span></td></tr></tbody></table></div>
+  <p class="m">표 5-2. 교차 loss(위)와 perplexity(아래, = e<sup>loss</sup>). 행 = 학생, 열 = 보여 준 교사의 답변. 작을수록 학생이 그 답을 "자기가 쓸 법한 글"로 본다. seed 5개 평균, 굵은 값 = 자기 교사의 답. seed 간 loss 표준편차 0.0005~0.0021.</p>
+  <p><b>표 5-2를 두 방향으로 읽는다.</b></p>
+  <ul>
+    <li><b>가로(행, 같은 학생):</b> 한 학생이 세 교사의 답 중 <b>자기 교사의 답에서 가장 낮은가</b>. 예: GPT 학생 행은 GPT 답 2.272(ppl 9.7) &lt; Claude 답 2.370(10.7) &lt; Gemini 답 2.392(10.9). → 학생 15명 중 15명 성립.</li>
+    <li><b>세로(열, 같은 답변):</b> 같은 교사의 답을 세 학생에게 보였을 때 <b>그 교사의 학생이 가장 낮은가</b>. 예: Gemini 답 열은 Gemini 학생 2.178(ppl 8.8) &lt; Claude 학생 2.308(10.1) &lt; GPT 학생 2.392(10.9). 같은 글끼리 비교하므로 답 자체가 쉽거나 어려운 정도가 상쇄된다(6절의 "같은 학생을 평가자끼리 비교"와 같은 논리). → seed 5 × 교사 3 = 15번 중 15번 성립.</li>
+  </ul>
+  </div></div>
+  <div class="note"><b>숫자 감각: 이 정도 perplexity면 낮은 것인가?</b>
+  <ul style="margin-bottom:0">
+    <li><b>아무것도 모를 때와 비교:</b> Qwen3 토크나이저의 어휘는 약 15만 개다. 무작위로 고르면 perplexity가 약 150,000이다. 9~10은 15만 개 후보를 사실상 10개 정도로 좁혔다는 뜻이다(정답 토큰에 평균 약 0.1의 확률).</li>
+    <li><b>1에 가까워질 수 없는 이유:</b> 같은 질문에도 맞게 답하는 방법(예시, 단어, 문장 연결)이 많다. 어미·조사는 쉽게 맞히지만 내용이 갈리는 지점은 어렵다. 그래서 자유 서술형 한국어 답변을 0.6B 모델이 읽을 때 10 안팎은 무난한 수준이다. 토크나이저와 텍스트가 다르면 perplexity를 직접 비교할 수 없으므로, 다른 연구의 값과 비교해 "낮다"고 말하지는 않는다.</li>
+    <li><b>이 연구에서 중요한 것은 같은 조건 안의 상대 비교다:</b>
+      학습으로 14.1 → 9.7(31% 감소, GPT 답변).
+      자기 교사의 답은 다른 교사의 답보다 GPT 학생 10~13%, Claude 학생 11~20%, Gemini 학생 23~35% 낮다.
+      반면 seed 간 흔들림은 loss 표준편차 최대 0.0021, perplexity로 약 0.2%다. <b>자기 교사 효과가 학습 무작위성보다 수십~수백 배 크다.</b></li>
+    <li><b>토큰당 차이는 답 전체에서 곱으로 쌓인다:</b> perplexity는 토큰 하나당 평균이다. 예를 들어 300토큰짜리 답이라면, GPT 학생이 GPT 답을 "자기가 쓸 법한 글"로 볼 확률은 Claude 답보다 약 e<sup>29</sup>배 크다(토큰당 loss 차 0.098 × 300).</li>
+  </ul></div>
+
+  <div class="cols"><div>
+  <figure><div class="legend"><span><i style="background:var(--c-gpt)"></i>GPT 답변</span><span><i style="background:var(--c-claude)"></i>Claude 답변</span><span><i style="background:var(--c-gemini)"></i>Gemini 답변</span></div><svg class="chart" viewBox="0 0 640 280" role="img" aria-label="묶음 막대 그림" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><line x1="52" x2="628" y1="234.0" y2="234.0" class="grid"/><text x="46" y="238.0" class="tick" text-anchor="end">0.00</text><line x1="52" x2="628" y1="181.0" y2="181.0" class="grid"/><text x="46" y="185.0" class="tick" text-anchor="end">0.10</text><line x1="52" x2="628" y1="128.0" y2="128.0" class="grid"/><text x="46" y="132.0" class="tick" text-anchor="end">0.20</text><line x1="52" x2="628" y1="75.00000000000003" y2="75.00000000000003" class="grid"/><text x="46" y="79.00000000000003" class="tick" text-anchor="end">0.30</text><line x1="52" x2="628" y1="22.0" y2="22.0" class="grid"/><text x="46" y="26.0" class="tick" text-anchor="end">0.40</text><line x1="52" x2="628" y1="234.0" y2="234.0" class="axis"/><rect x="95.0" y="35.88599999999994" width="34" height="198.11400000000006" rx="3" fill="var(--c-gpt)" class="hl"><title>GPT 학생 · GPT 답변: 0.37</title></rect><text x="112.0" y="30.88599999999994" class="val b" text-anchor="middle">0.37</text><rect x="131.0" y="164.623" width="34" height="69.37700000000001" rx="3" fill="var(--c-claude)"><title>GPT 학생 · Claude 답변: 0.13</title></rect><text x="148.0" y="159.623" class="val" text-anchor="middle">0.13</text><rect x="167.0" y="207.92400000000004" width="34" height="26.075999999999965" rx="3" fill="var(--c-gemini)"><title>GPT 학생 · Gemini 답변: 0.05</title></rect><text x="184.0" y="202.92400000000004" class="val" text-anchor="middle">0.05</text><text x="148.0" y="254" class="lab" text-anchor="middle">GPT 학생</text><rect x="287.0" y="94.76899999999992" width="34" height="139.23100000000008" rx="3" fill="var(--c-gpt)"><title>Claude 학생 · GPT 답변: 0.26</title></rect><text x="304.0" y="89.76899999999992" class="val" text-anchor="middle">0.26</text><rect x="323.0" y="75.31800000000007" width="34" height="158.68199999999993" rx="3" fill="var(--c-claude)" class="hl"><title>Claude 학생 · Claude 답변: 0.30</title></rect><text x="340.0" y="70.31800000000007" class="val b" text-anchor="middle">0.30</text><rect x="359.0" y="163.51" width="34" height="70.49000000000001" rx="3" fill="var(--c-gemini)"><title>Claude 학생 · Gemini 답변: 0.13</title></rect><text x="376.0" y="158.51" class="val" text-anchor="middle">0.13</text><text x="340.0" y="254" class="lab" text-anchor="middle">Claude 학생</text><rect x="479.0" y="143.211" width="34" height="90.78899999999999" rx="3" fill="var(--c-gpt)"><title>Gemini 학생 · GPT 답변: 0.17</title></rect><text x="496.0" y="138.211" class="val" text-anchor="middle">0.17</text><rect x="515.0" y="172.997" width="34" height="61.002999999999986" rx="3" fill="var(--c-claude)"><title>Gemini 학생 · Claude 답변: 0.12</title></rect><text x="532.0" y="167.997" class="val" text-anchor="middle">0.12</text><rect x="551.0" y="94.87499999999991" width="34" height="139.12500000000009" rx="3" fill="var(--c-gemini)" class="hl"><title>Gemini 학생 · Gemini 답변: 0.26</title></rect><text x="568.0" y="89.87499999999991" class="val b" text-anchor="middle">0.26</text><text x="532.0" y="254" class="lab" text-anchor="middle">Gemini 학생</text></svg><figcaption>그림 5-2. 교차 loss 감소량 = 표 5-2의 학습 전 Qwen 값 − 학생 값. 막대 묶음 = 학생, 막대 색 = 보여 준 교사의 답변. 클수록 학습으로 그 교사의 답에 더 가까워졌다(seed 5개 평균). 굵은 테두리 = 자기 교사의 답.</figcaption></figure>
+  </div><div>
+  <p><b>그림 5-2 읽기: 학습 전보다 얼마나 줄었나.</b> 표 5-2의 각 칸에서 첫 행(학습 전 Qwen)을 뺀 값이다. 모든 학생이 세 교사의 답 모두를 학습 전보다 "자기가 쓸 법한 글"로 보게 되었다. 세 교사에 공통인 한국어 어시스턴트 답변 형식을 배웠기 때문이다. 그러나 <b>줄어든 폭은 언제나 자기 교사의 답에서 가장 컸다</b>.</p>
+  <ul>
+    <li>GPT 학생: GPT 답 −0.37, Claude 답 −0.13, Gemini 답 −0.05</li>
+    <li>Claude 학생: Claude 답 −0.30, GPT 답 −0.26, Gemini 답 −0.13</li>
+    <li>Gemini 학생: Gemini 답 −0.26, GPT 답 −0.17, Claude 답 −0.12</li>
+  </ul>
+  <div class="note"><b>5.4 결론.</b> 학생은 "한국어로 답하는 법" 일반을 넘어 <b>자기 교사의 고유한 스타일</b>을 흡수했다(행·열 비교 모두 15/15). 평가자가 학생의 답에서 자기 계열의 흔적을 알아볼 수 있는 조건이 갖춰졌다.</div>
+  </div></div>
+
+  <h3>5.5 학생 응답의 완결성</h3>
+  <p>평가 질문 400개 중 끝 토큰으로 스스로 끝맺고 1,024토큰 미만인 "완전한 답"의 수. 15명 모두 완전한 질문 144개 중 100개를 6절의 LLM 평가에 썼다.</p>
+  <div class="tw"><table class=""><thead><tr><th>학생</th><th class="num">seed 42</th><th class="num">43</th><th class="num">44</th><th class="num">45</th><th class="num">46</th></tr></thead><tbody><tr><td>GPT 학생</td><td class='num'>380</td><td class='num'>388</td><td class='num'>386</td><td class='num'>390</td><td class='num'>393</td></tr><tr><td>Claude 학생</td><td class='num'>343</td><td class='num'>296</td><td class='num'>322</td><td class='num'>331</td><td class='num'>335</td></tr><tr><td>Gemini 학생</td><td class='num'>384</td><td class='num'>383</td><td class='num'>391</td><td class='num'>387</td><td class='num'>389</td></tr></tbody></table></div>
+  <p class="m">표 5-3. 학생별 완전한 답의 수(400개 중).</p>
+  <div class="note"><b>5절 결론.</b> (1) 학습에 안 쓴 답의 loss가 0.26~0.37 줄어 학습이 잘 되었다. (2) seed 간 최종 val loss 차이가 0.001 수준으로 학습이 안정적이다. (3) <b>학생 15명 모두 자기 교사의 답에서 loss가 가장 낮고 감소량도 가장 컸다(15/15)</b>. 교사의 스타일이 학생에게 옮겨졌다.</div>
+
+</section>
+
+<section id="s6"><h2><span class="no">6</span>LLM-as-a-Judge: 설계, 과정, 결과</h2>
+  <h3>6.1 설계</h3>
+  <div class="cols"><div>
+  <ul>
+    <li><b>평가자 3명:</b> 교사와 같은 GPT·Claude·Gemini. 같은 프롬프트, 추론 강도 medium, 출력 한도 12,288토큰. 답의 출처는 보여 주지 않는다(블라인드).</li>
+    <li><b>listwise 순위 평가:</b> 같은 질문에 대한 <b>같은 seed의 GPT·Claude·Gemini 학생 답 3개</b>를 한 번에 보여 주고 1~3위를 매긴다(동점 없음). 처음 시도한 1~5점 채점은 0.6B 학생 답이 대부분 사실을 지어내 사실 정확성이 120개 모두 1점(바닥 효과)이어서 순위 방식으로 바꿨다.</li>
+    <li><b>출력 5개:</b> FLASK(Ye et al., 2024) 기반 평가 기준 4개(사실 정확성, 질문 충족도, 논리성, 가독성) 각각의 근거와 순위 + 네 기준을 종합한 <b>최종 순위(overall)</b>. 주 결과는 최종 순위다.</li>
+    <li><b>위치 편향 통제:</b> 같은 세 답을 <b>순서만 바꿔 3번</b> 넣는다(각 학생이 A·B·C에 한 번씩, 라틴 방격). 시작 순서는 6가지 순열을 돌아가며 쓰고, 처리 순서는 무작위로 섞었다.</li>
+  </ul>
+  </div><div>
+<pre>같은 질문, 같은 seed의 세 답      답변 A        답변 B        답변 C
+순서 1                             GPT 학생      Claude 학생   Gemini 학생
+순서 2                             Claude 학생   Gemini 학생   GPT 학생
+순서 3                             Gemini 학생   GPT 학생      Claude 학생</pre>
+  <div class="tw"><table class=""><thead><tr><th>단위</th><th class="num">개수</th></tr></thead><tbody><tr><td>질문</td><td class='num'>100</td></tr><tr><td>묶음 (질문 × seed 5)</td><td class='num'>500</td></tr><tr><td>평가 항목 (묶음 × 순서 3)</td><td class='num'>1,500</td></tr><tr><td>API 평가 (× 평가자 3)</td><td class='num'>4,500</td></tr><tr><td>순위 (× 기준 4 + 최종 1)</td><td class='num'>22,500</td></tr><tr><td>평가자 1명이 학생 1명에게 매긴 순위</td><td class='num'>1,500</td></tr></tbody></table></div>
+  <p class="m">실패 0건(Gemini 형식 오류 11건은 재요청으로 해결). 소요: GPT 53분, Claude 25분, Gemini 37분.</p>
+  </div></div>
+
+  <h3>6.1.1 실제 평가 한 건 보기: 선호 누출은 판정에서 어떻게 보이나</h3>
+  <p>6.2부터 지표와 모형으로 들어가기 전에, 실제 판정 한 건을 본다. 같은 질문·같은 seed의 학생 세 명의 답을 세 평가자가 <b>순서를 바꿔 3번씩</b> 평가한 묶음(묶음 295번, seed 44)이다.</p>
+  <p><b>질문.</b> "민물고기는 바다에서 살 수 없는 이유는 무엇인가요? 또, 바닷물에서 살아야 하기 때문에 담수에서 살기 어려운 바닷고기는 어떻게 생존할까요? 그리고 연어는 왜 바다와 민물 모두에서 살 수 있나요?" 정답의 핵심은 <b>삼투압 조절</b>인데, 세 학생 모두 이를 설명하지 못하고 내용을 지어냈다(0.6B 학생 답의 일반적 수준).</p>
+  <div class="tw"><table class=""><thead><tr><th style="width:15%">학생</th><th>답변 (앞부분 발췌)</th><th style="width:22%">형식</th></tr></thead><tbody>
+  <tr><td><b style="color:var(--c-gpt)">GPT 학생</b><br><span class="m">325토큰</span></td><td>민물고기는 바다에서 사라지는 것은 아닙니다. … 연어는 바다와 담수 모두에서 살 수 있는 이유는 주로 <b>공기·습도·온도 조절 능력</b> 때문입니다. 연어는 눈을 감으며 몸을 깊숙이 쌓아 공기를 넣고 …</td><td>문단 3개로 세 질문에 차례로 답함</td></tr>
+  <tr><td><b style="color:var(--c-claude)">Claude 학생</b><br><span class="m">489토큰</span></td><td><b>민물고기(파리류)가 바다에서 사라지는 이유</b><br>- <b>해양의 질소·탄소 순환</b>: … - <b>생식 장애</b>: 날개가 부족하거나 몸이 짧아서 움직임이 제한적일 수 있습니다. …</td><td>굵은 소제목 + "-" 목록. 물고기에 날개·발톱이 등장</td></tr>
+  <tr><td><b style="color:var(--c-gemini)">Gemini 학생</b><br><span class="m">381토큰</span></td><td>바다에서 사라지는 고기는 <b>'유전적 멸종(생태계 내 멸종)'</b> 때문입니다. … 1. <b>해양 포식자로부터 피격</b> … 연어는 … <b>'공통의 생리학적 특성'</b> 때문입니다. 1. <b>단일 색상과 소형</b> …</td><td>번호 목록 + 굵은 소제목 + "따라서" 마무리</td></tr>
+  </tbody></table></div>
+  <p class="m">표 6-A. 세 학생의 답(발췌). 평가자에게는 학생 이름 없이 A·B·C로만 보여 준다.</p>
+  <div class="tw"><table class=""><thead><tr><th>평가자</th><th>순서 1<br><span class="m">A GPT · B Gemini · C Claude</span></th><th>순서 2<br><span class="m">A Gemini · B Claude · C GPT</span></th><th>순서 3<br><span class="m">A Claude · B GPT · C Gemini</span></th></tr></thead><tbody>
+  <tr><td>GPT 평가자</td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td></tr>
+  <tr><td>Claude 평가자</td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td></tr>
+  <tr><td class="sig"><b>Gemini 평가자</b></td><td class="sig"><b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td><td class="sig"><b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td><td class="sig"><b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td></tr>
+  </tbody></table></div>
+  <p class="m">표 6-B. 최종 순위(1위 &gt; 2위 &gt; 3위). 열 머리글 = 그 순서에서 각 학생이 놓인 위치.</p>
+  <p><b>평가자가 적은 근거 (순서 1, 원문 그대로, 괄호는 설명을 위해 덧붙임).</b></p>
+  <ul>
+    <li><b>GPT 평가자:</b> "A(GPT 학생)는 핵심 과학 원리는 거의 설명하지 못했지만 세 질문에 직접 답하려 했고 연어의 양쪽 환경 적응이라는 결론은 맞는다. B(Gemini 학생)는 <b>구조와 문장성은 더 낫지만 사실 오류가 크며</b>, C(Claude 학생)는 대상과 생물학적 개념을 전반적으로 혼동해 가장 부적절하다."</li>
+    <li><b>Claude 평가자:</b> "세 답변 모두 품질이 낮지만 A(GPT 학생)가 질문 의도에 가장 가깝고 상대적으로 오류와 비약이 적다. B(Gemini 학생)가 그다음이며 C(Claude 학생)는 무관한 내용과 반복으로 가장 나쁘다."</li>
+    <li><b>Gemini 평가자:</b> "세 답변 모두 삼투압 현상이라는 핵심 원리를 전혀 설명하지 못하고 지어낸 엉터리 답변입니다. 그나마 답변 B(Gemini 학생)가 문맥 붕괴와 기괴한 표현(물고기의 날개, 발톱 등)이 가장 적고 <b>형식적인 글의 형태를 갖추고 있어 최선</b>이며, 답변 C(Claude 학생)는 물고기를 곤충/조류처럼 묘사하는 등 질적으로 가장 떨어집니다."</li>
+  </ul>
+  <p><b>이 예시에서 읽을 수 있는 것.</b></p>
+  <ul>
+    <li><b>중립 심판과 반대로 판정했다:</b> <b style="color:var(--c-gpt)">GPT 학생</b>와 <b style="color:var(--c-gemini)">Gemini 학생</b>을 비교할 때 둘 중 어느 쪽과도 계열이 다른 평가자, 즉 <b>중립 심판</b>은 Claude 평가자다. Claude 평가자는 3번 모두 GPT 학생이 낫다고 봤다. Gemini 평가자만 3번 모두 이 순서를 뒤집었다. 6.2 (4)의 "중립 심판" 논리가 실제 판정에서 드러나는 장면이다.</li>
+    <li><b>위치 탓이 아니다:</b> Gemini 학생이 A, B, C 어디에 놓여도 Gemini 평가자는 매번 1위를 줬다.</li>
+    <li><b>같은 특징을 다르게 저울질했다:</b> GPT 평가자도 Gemini 학생의 답이 "구조와 문장성은 더 낫다"고 인정했지만 사실 오류를 더 무겁게 보고 2위에 놓았다. Gemini 평가자는 같은 특징("형식적인 글의 형태")을 1위의 근거로 삼았다.</li>
+    <li><b>기준별로도 같았다:</b> Gemini 평가자는 이 묶음에서 사실 정확성을 포함한 네 기준 모두 Gemini 학생을 GPT 학생보다 위에 놓았다(사실 정확성 평균 순위 Gemini 학생 1.00위, GPT 학생 2.00위). GPT·Claude 평가자는 사실 정확성에서 GPT 학생 1위, Gemini 학생 2위였다.</li>
+    <li><b>Claude 평가자는 자기 계열을 봐주지 않았다:</b> Claude 학생은 Claude 평가자에게서도 3번 모두 3위였다.</li>
+  </ul>
+  <div class="warn"><b>이 예시는 증거가 아니라 그림이다.</b> 이 묶음은 "Gemini 평가자만 순서 3가지 모두 Gemini 학생을 1위로, 나머지 두 평가자는 모두 2위 이하로" 놓은 사례를 골라 보여 준 것이다. 이렇게 뚜렷한 패턴은 드물고(묶음 500개 중 Gemini 평가자 7개), 다른 평가자에게도 있다(같은 기준으로 Claude 평가자 5개, GPT 평가자 1개). 선호 누출이 있는지와 그 크기는 한 건이 아니라 <b>판정 4,500개 전체</b>를 쓴 통계 모형(6.2 (5), 6.4)으로 판단한다.</div>
+
+  <h3>6.1.2 반대 경우: 한 답만 핵심을 맞혔을 때 평가자는 어떻게 판정했나</h3>
+  <p>6.1.1처럼 평가자마다 판정이 갈린다면, "평가자가 애초에 답을 제대로 읽기는 하는가?"라는 의문이 든다. 평가자가 내용을 보지 않고 아무렇게나 순위를 매긴다면, 그 차이를 선호 누출이라고 부를 수 없다. 그래서 반대 경우, 즉 <b>한 학생만 질문의 핵심을 맞힌 묶음</b>을 본다(묶음 339번, seed 45).</p>
+  <p><b>질문.</b> "음식 알레르기는 왜 생길까요? 저는 메밀만 먹으면 심한 두드러기와 천식 기가 생기는데, 다른 음식은 괜찮습니다. 유독 메밀이 들어간 음식만 먹으면 증상이 나타나는 이유가 무엇인지 궁금합니다." 정답의 핵심은 <b>메밀 성분(단백질)에 대한 면역 반응</b>이다(KoAlpaca 참조 답 기준).</p>
+  <div class="tw"><table class=""><thead><tr><th style="width:15%">학생</th><th>답변 (발췌)</th><th style="width:24%">핵심을 맞혔나</th></tr></thead><tbody>
+  <tr><td><b style="color:var(--c-gpt)">GPT 학생</b><br><span class="m">239토큰</span></td><td>메밀알레르기가 심한 이유는 주로 <b>메밀의 항체(특히 IgE) 반응</b> 때문입니다. … 증상이 악화되면 알레르기 검사 후 치료를 받는 것이 좋습니다. 특히 천식·기가증후군이 심하거나 심한 두드러기가 있으면 즉시 진료를 받아야 합니다.</td><td>✅ IgE 면역 반응과 진료 권고. 일부 표현은 부정확</td></tr>
+  <tr><td><b style="color:var(--c-claude)">Claude 학생</b><br><span class="m">474토큰</span></td><td>- <b>메밀토스포닌(β-카페인)</b>: 항체 반응을 일으키는 물질 중 하나입니다. … - <b>혈관 문제</b>: 뇌졸중 위험이 있어 … 가공 제품이나 복숭아 같은 재료보다 더 많이 섭취하세요.</td><td>❌ 존재하지 않는 성분, 위험한 섭취 권고</td></tr>
+  <tr><td><b style="color:var(--c-gemini)">Gemini 학생</b><br><span class="m">400토큰</span></td><td>메밀의 <b>키랄(단백질)과 피부 표면에 닿아서 반응</b>하는 것입니다. … '메밀산소(Melittin)' … 알레르기 환자라면 소량씩 드셔도 안전하다는 것을 확인하시기 바랍니다.</td><td>❌ 꿀벌 독 성분(멜리틴)을 메밀 성분으로 착각, 위험한 권고</td></tr>
+  </tbody></table></div>
+  <p class="m">표 6-C. 세 학생의 답(발췌).</p>
+  <div class="tw"><table class=""><thead><tr><th>평가자</th><th>순서 1<br><span class="m">A Claude · B Gemini · C GPT</span></th><th>순서 2<br><span class="m">A Gemini · B GPT · C Claude</span></th><th>순서 3<br><span class="m">A GPT · B Claude · C Gemini</span></th></tr></thead><tbody>
+  <tr><td>GPT 평가자</td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b></td></tr>
+  <tr><td>Claude 평가자</td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b></td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b></td></tr>
+  <tr><td>Gemini 평가자</td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b></td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td><td><b style="color:var(--c-gpt)">GPT 학생</b> &gt; <b style="color:var(--c-gemini)">Gemini 학생</b> &gt; <b style="color:var(--c-claude)">Claude 학생</b></td></tr>
+  </tbody></table></div>
+  <p class="m">표 6-D. 최종 순위. 9번 판정 모두 GPT 학생이 1위다(사실 정확성 기준도 9번 모두 1위).</p>
+  <p><b>평가자가 적은 근거 (사실 정확성, 순서 1, 원문 그대로, 괄호는 설명을 위해 덧붙임).</b></p>
+  <ul>
+    <li><b>GPT 평가자:</b> "C(GPT 학생)는 IgE가 항체라는 설명을 다소 혼동하고 표현도 부정확하지만, 메밀 단백질 알레르겐에 대한 면역반응과 회피·진료 필요성이라는 핵심은 대체로 맞습니다. B(Gemini 학생)는 존재가 확인되지 않는 물질과 기전을 제시하고, A(Claude 학생)는 다수의 허위 성분·뇌졸중 관련 주장 및 위험한 섭취 권고를 포함합니다."</li>
+    <li><b>Claude 평가자:</b> "세 답변 모두 오류가 많다. C(GPT 학생)는 IgE 항체 반응이라는 핵심 기전만큼은 맞고 나머지는 모호한 수준이다."</li>
+    <li><b>Gemini 평가자:</b> "답변 C(GPT 학생)는 완벽하진 않으나 메밀 특이 IgE 항체 반응이라는 알레르기의 실제 핵심 기전을 <b>유일하게 정확히 짚었습니다</b>. 반면 답변 A와 답변 B는 존재하지 않는 성분명을 지어내고 봉독 성분(Melittin)을 메밀 성분으로 둔갑시키거나 알레르기 환자에게 섭취를 권하는 등 위험하고 심각한 환각(오정보)을 포함하고 있습니다."</li>
+  </ul>
+  <p><b>이 예시에서 읽을 수 있는 것.</b></p>
+  <ul>
+    <li><b>세 평가자가 같은 답을, 같은 이유로 골랐다:</b> 핵심 키워드(IgE 면역 반응)를 맞힌 답을 위치와 상관없이 9번 모두 1위로 놓았고, 세 평가자의 근거가 모두 같은 지점("IgE라는 핵심 기전")을 짚었다. 평가자는 답의 <b>내용</b>을 읽고 판단한다.</li>
+    <li><b>틀린 답을 구체적으로 가려냈다:</b> 존재하지 않는 성분, 꿀벌 독(멜리틴)과의 혼동, 알레르기 환자에게 섭취를 권하는 위험한 조언까지 짚어 냈다.</li>
+    <li><b>Gemini 평가자도 자기 계열을 올리지 않았다:</b> 내용 차이가 분명하자 Gemini 평가자는 Gemini 학생의 오류를 직접 지적하고 GPT 학생을 1위로 놓았다.</li>
+    <li><b>둘 다 틀린 답 사이의 2·3위는 흔들렸다:</b> Claude 학생과 Gemini 학생의 2·3위 순서는 평가자와 제시 순서에 따라 바뀌었다. 내용으로 가리기 어려운 답끼리는 판정이 불안정하다.</li>
+  </ul>
+  <div class="note"><b>두 예시를 함께 보면: 왜 평가자별 선호를 추정할 수 있는가.</b>
+  <ul style="margin-bottom:0">
+    <li><b>평가자들은 기본적으로 같은 품질 판단을 공유한다.</b> 알레르기 예시처럼 내용 차이가 분명하면 세 평가자는 한목소리를 낸다. 전체 자료에서도 9번 판정이 모두 같은 학생을 1위로 고른 묶음이 500개 중 126개였고, 두 평가자가 같은 답을 1위로 고른 비율은 66~69%로 우연(33.3%)의 두 배다.</li>
+    <li><b>선호 누출은 이 공통 판단 위에 얹힌 "체계적 차이"로 측정한다.</b> 순위 로짓 모형(6.2 (5))에서 세 평가자가 공통으로 인정한 품질은 학생 품질 θ가 맡고, 그 위에서 <b>자기 계열 학생에게만 반복해서 더해지는 몫</b>을 λ로 따로 추정한다. 평가자가 내용을 제대로 읽지 않는다면 θ가 의미를 잃고 λ도 해석할 수 없지만, 위 결과는 그렇지 않음을 보여 준다.</li>
+    <li><b>누출이 드러나기 쉬운 자리는 내용으로 가리기 어려운 답 사이다.</b> 민물고기 예시(6.1.1)처럼 세 답이 모두 틀리면 평가자는 형식 같은 다른 단서에 기대게 되고, 그 틈에서 자기 계열 문체에 대한 선호가 드러날 수 있다. 이것은 두 예시에서 얻은 해석이며, 통계로 검증한 것은 아니다.</li>
+    <li><b>한계:</b> 사람 평가가 없으므로 "평가자가 옳게 판정했다"는 것은 KoAlpaca 참조 답과 평가자 근거를 대조해 확인한 것이다. 한 예시가 모든 판정의 정확성을 보장하지는 않는다(7.3 한계).</li>
+  </ul></div>
+
+  <h3>6.2 선호 편향을 재는 방법</h3>
+  <p>평가자 한 명이 매긴 순위 하나를 예로 든다. GPT 평가자가 어떤 질문에서 <b>GPT 학생 1위, Gemini 학생 2위, Claude 학생 3위</b>로 매겼다. 이런 순위 1,500개(평가자·학생마다)를 먼저 두 가지 지표로 요약한다.</p>
+  <div class="cols"><div>
+  <h3>(1) 1위 비율: "나머지 두 답보다 위에 놓았나?"</h3>
+  <p>학생이 1위, 즉 나머지 두 학생보다 모두 위에 놓인 비율이다. 위 예에서 GPT 학생은 1번 성공이다.</p>
+<pre>1위 비율(평가자 j, 학생 t)
+  = 평가자 j가 학생 t를 1위로 놓은 횟수 ÷ 전체 횟수(1,500)
+
+기준선: 세 학생의 품질이 같고 편향이 없으면 1/3 = 33.3%
+예) GPT 평가자 → GPT 학생: 709 ÷ 1,500 = 47.3%</pre>
+  <p>"GPT 평가자가 GPT 학생을 나머지 둘보다 높게 매긴 경우가 많은가?"에 그대로 답하는 가장 직관적인 지표다. 다만 2위와 3위의 차이는 쓰지 않는다.</p>
+
+  <h3>(2) 쌍대 승률: "상대 한 명과 붙었을 때 이겼나?"</h3>
+  <p>순위 하나를 두 학생씩 짝지은 대결 3개로 푼다. 위 예에서는 GPT &gt; Gemini, GPT &gt; Claude, Gemini &gt; Claude. 학생 한 명은 순위 하나에서 대결 2개에 참여한다.</p>
+<pre>1위 → 2승 0패,  2위 → 1승 1패,  3위 → 0승 2패
+
+쌍대 승률(평가자 j, 학생 t)
+  = 이긴 대결 수 ÷ 참여한 대결 수
+  = (1위 횟수 × 2 + 2위 횟수) ÷ (전체 횟수 × 2)
+
+기준선: 50%
+예) GPT 평가자 → GPT 학생: (709 × 2 + 463) ÷ 3,000 = 62.7%</pre>
+  <p>1·2·3위 정보를 모두 쓰므로 1위 비율보다 정밀하다.</p>
+  <div class="note"><b>주 지표는 쌍대 승률, 1위 비율은 보조.</b> 선호 누출의 최종 판단은 쌍대 승률(② 순위 로짓 모형(PL))로 한다. 순위 정보를 모두 써서 더 정밀하고(신뢰구간이 더 좁음), 분석 계획 단계에서 미리 정한 주 모형이기 때문이다. 1위 비율(① 1위 모형)은 "1등을 몰아주는가"라는 직관적인 질문으로도 같은 결론이 나오는지 확인하는 보조 지표다.</div>
+  <div class="tw"><table class=""><thead><tr><th></th><th>1위 비율</th><th>쌍대 승률</th></tr></thead><tbody><tr><td>묻는 것</td><td>나머지 둘보다 모두 위인가</td><td>상대 한 명보다 위인가</td></tr><tr><td>쓰는 정보</td><td>1위인지만</td><td>1·2·3위 전부</td></tr><tr><td>기준선</td><td>33.3%</td><td>50%</td></tr><tr><td>장점</td><td>직관적</td><td>정밀함</td></tr><tr><td>역할</td><td>보조 지표</td><td><b>주 지표</b></td></tr></tbody></table></div>
+  </div><div>
+  <h3>(3) 두 지표로 알고 싶은 것: 선호 누출</h3>
+  <p>(1)·(2)는 "평가자가 그 학생을 얼마나 높게 매겼나"를 요약한 값이다. 이 연구가 알고 싶은 것은 그중에서 <b>학생의 실제 품질 때문이 아니라 평가자와 같은 계열이라서 더 받은 몫</b>이다.</p>
+<pre>본 연구가 알고 싶은 값 (선호 누출, 평가자 j)
+  = 평가자 j가 자기 계열 학생에게 준 1위 비율(또는 쌍대 승률)
+  − 그 학생의 실제 품질만으로 받았어야 할 값
+
+0이면 공정, 양수면 자기 계열을 더 높게 평가</pre>
+  <p>문제는 "실제 품질만으로 받았어야 할 값"을 모른다는 것이다. 사람 평가가 없으므로 정답 순위가 없다. GPT 평가자가 GPT 학생을 1위로 자주 놓았다고 바로 편향이라 할 수도 없다. GPT 학생의 답이 실제로 좋아서일 수 있기 때문이다.</p>
+  <p>가장 쉬운 방법은 <b>같은 학생의 답을 다른 평가자가 어떻게 봤는지</b>를 기준선으로 쓰는 것이다. 답이 같으므로 품질 차이는 지워지고 평가자의 차이만 남는다고 기대할 수 있다.</p>
+<pre>단순 누출(GPT 평가자)
+  = [GPT 평가자가 매긴 GPT 학생의 1위 비율]
+  − [Claude·Gemini 평가자가 매긴 GPT 학생의 1위 비율 평균]
+
+편향이 없으면 0, 양수면 자기 계열 학생을 더 높게 본 것
+
+예) 47.3% − (43.5% + 40.5%) ÷ 2 = +5.3%p
+    (쌍대 승률로 재면 62.7% − 58.4% = +4.3%p)</pre>
+  </div></div>
+
+  <h3>(4) 통계를 몰라도 이해하는 분석의 논리: 요리 대회로 보기</h3>
+  <p>이 연구의 구조는 요리 대회와 똑같다. 아래 표처럼 바꿔 읽으면, 통계 용어 없이도 무엇을 확인하려 했고 왜 통계 모형이 필요했는지 따라갈 수 있다.</p>
+  <div class="cols"><div>
+  <div class="tw"><table class=""><thead><tr><th>이 연구</th><th>요리 대회로 바꾸면</th></tr></thead><tbody><tr><td>교사 LLM (GPT, Claude, Gemini)</td><td>고유한 스타일을 가진 세 요리 학교. 한 학교는 담백하게, 한 학교는 화려하게 담는다</td></tr><tr><td>학생 모델 15개</td><td>각 학교가 기른 견습생. 실력뿐 아니라 학교의 스타일까지 물려받았다(4절, 5절에서 확인)</td></tr><tr><td>LLM 평가자</td><td>심사위원이 바로 세 학교의 수석 셰프다</td></tr><tr><td>블라인드 listwise 평가</td><td>누가 만들었는지 모르는 세 접시를 맛보고 1·2·3위를 매긴다</td></tr><tr><td><b>선호 누출</b></td><td>심사위원이 익숙한 <b>우리 학교 스타일</b>에 무심코 더 주는 점수</td></tr></tbody></table></div>
+  </div><div>
+  <p><b>"GPT 심사위원이 GPT 견습생을 1위로 자주 뽑았다"만으로는 편향이라고 말할 수 없다.</b> 다음 네 가지 함정을 먼저 치워야 한다.</p>
+  <div class="tw"><table class=""><thead><tr><th>함정</th><th>무슨 일인가 (실제 자료)</th><th>어떻게 막았나</th></tr></thead><tbody><tr><td><b>① 실제로 잘해서</b><br><span class="m">학생 품질</span></td><td>GPT 견습생은 세 심사위원 모두에게서 가장 자주 1위였다. 실력이 좋은 것이지 편애가 아닐 수 있다</td><td><b>같은 견습생의 같은 접시</b>를 심사위원끼리 비교한다. 접시가 같으면 실력이 같으므로 차이는 심사위원에게서 나온다. 모형에서는 품질 θ가 이 몫을 맡는다</td></tr><tr><td><b>② 먼저 나와서</b><br><span class="m">위치 편향</span></td><td>첫 번째(A) 접시가 1위가 된 비율이 42~50%였다(공정하면 33.3%). 같은 접시도 A에서 1.48위, C에서 2.00위</td><td>같은 세 접시를 <b>순서만 바꿔 세 번</b> 내놓아 모든 견습생이 A·B·C에 500번씩 놓이게 했다. 모형에서는 위치 δ가 맡는다</td></tr><tr><td><b>③ 다른 심사위원도 편애해서</b><br><span class="m">기준선 오염</span></td><td>"다른 심사위원 평균"을 기준선으로 쓰면, 그 심사위원들의 편애가 기준선을 깎아 공정한 심사위원도 편향된 것처럼 보인다(아래 예시)</td><td>대결마다 있는 <b>제3의 심판</b>을 이용해 세 심사위원의 편애를 <b>동시에</b> 추정한다(순위 로짓 모형, (5))</td></tr><tr><td><b>④ 우연히</b><br><span class="m">표본 변동</span></td><td>질문 100개로 얻은 숫자다. 다른 질문이었다면 값이 조금 달랐을 것이다</td><td>질문을 다시 뽑아 1,000번 재계산(부트스트랩), 심사위원 셋을 함께 검정한 몫을 보정(Holm), 견습생을 다섯 번 새로 기름(seed 반복). 자세히는 (6)</td></tr></tbody></table></div>
+  </div></div>
+  <p><b>단순 계산은 ①과 ②는 어느 정도 막지만 ③과 ④는 막지 못한다.</b> 네 함정을 한꺼번에 처리하는 도구가 (5)의 통계 모형과 (6)의 검정 도구다. 가장 이해하기 어려운 함정 ③을 숫자로 먼저 보자.</p>
+  <p><b>함정 ③ 자세히 보기.</b> 단순 계산은 "다른 평가자는 공정하다"고 가정한다. 그런데 다른 평가자도 각자 자기 계열 학생을 우대할 수 있다. 게다가 순위는 세 학생이 1·2·3위를 나눠 갖는 구조라, 한 학생을 올리면 나머지 학생은 <b>자동으로</b> 내려간다.</p>
+  <div class="cols"><div>
+  <p><b>예시: 편향이 Gemini 평가자에게만 있는 경우.</b> 세 학생의 실제 품질은 모두 같다고 하자. GPT·Claude 평가자는 완전히 공정하고, Gemini 평가자만 Gemini 학생을 우대한다(쌍대 승률, %).</p>
+  <div class="tw"><table class=""><thead><tr><th>평가자</th><th class="num">GPT 학생</th><th class="num">Claude 학생</th><th class="num">Gemini 학생</th></tr></thead><tbody><tr><td>GPT 평가자 (공정)</td><td class='num'>50</td><td class='num'>50</td><td class='num'>50</td></tr><tr><td>Claude 평가자 (공정)</td><td class='num'>50</td><td class='num'>50</td><td class='num'>50</td></tr><tr><td>Gemini 평가자 (편향)</td><td class='num'><b>40</b></td><td class='num'><b>40</b></td><td class='num'>70</td></tr></tbody></table></div>
+  <p>Gemini 평가자가 Gemini 학생을 70%로 올리자, 승률의 평균 50%를 맞추느라 GPT·Claude 학생이 <b>40%로 내려갔다</b>. 이 40은 두 학생의 품질 탓이 아니라 Gemini 평가자의 편향 탓이다. 이제 단순 계산을 해 보면</p>
+<pre>GPT 누출    = 50 − (Claude 평가자 50 + Gemini 평가자 40) ÷ 2 = 50 − 45 = +5%p   ✗ 실제는 0
+Claude 누출 = 50 − (GPT 평가자 50 + Gemini 평가자 40) ÷ 2    = 50 − 45 = +5%p   ✗ 실제는 0
+Gemini 누출 = 70 − (GPT 평가자 50 + Claude 평가자 50) ÷ 2    = 70 − 50 = +20%p  ✓</pre>
+  <p><b>공정한 GPT·Claude 평가자에게도 +5%p의 가짜 누출이 생긴다.</b> Gemini 평가자의 편향이 "다른 평가자 평균"이라는 기준선을 통해 다른 평가자에게 번진 것이다.</p>
+  </div><div>
+  <p><b>해결의 실마리: 쌍마다 "중립 심판"이 있다.</b> 학생 둘을 비교하면, 둘 중 어느 쪽과도 계열이 다른 평가자가 항상 한 명 있다. 그 평가자의 판정을 기준선으로 쓰면 기준선이 오염되지 않는다. 같은 예시를 쌍(1:1 대결)으로 풀면</p>
+  <div class="tw"><table class=""><thead><tr><th>학생 쌍</th><th>중립 심판</th><th>중립 심판의 판정</th><th>나머지 두 평가자의 판정</th><th>결론</th></tr></thead><tbody><tr><td>GPT vs Claude</td><td>Gemini 평가자</td><td class='num'>50 : 50</td><td>GPT 평가자 50:50, Claude 평가자 50:50</td><td>GPT·Claude 평가자 편향 없음</td></tr><tr><td>GPT vs Gemini</td><td>Claude 평가자</td><td class='num'>50 : 50</td><td>GPT 평가자 50:50, <b>Gemini 평가자 30:70</b></td><td>Gemini 평가자만 +20%p</td></tr><tr><td>Claude vs Gemini</td><td>GPT 평가자</td><td class='num'>50 : 50</td><td>Claude 평가자 50:50, <b>Gemini 평가자 30:70</b></td><td>Gemini 평가자만 +20%p</td></tr></tbody></table></div>
+<pre>중립 심판 기준 → GPT 0,  Claude 0,  Gemini +20%p   (정답)
+단순 계산      → GPT +5, Claude +5, Gemini +20%p</pre>
+  <p><b>실제 자료에서도 같은 일이 일어났다.</b> Gemini 평가자의 자기 우대가 실제로 컸기 때문에, 쌍대 승률로 단순 계산하면 GPT +4.3, Claude +1.8%p였지만, 중립 심판을 기준으로 한 통계 모형에서는 GPT +2.8, Claude −2.0%p였다(7.1).</p>
+  </div></div>
+
+  <h3>(5) 그래서 본 연구가 쓴 방법: 세 평가자의 편향을 동시에 추정하는 통계 모형</h3>
+  <p>(3)의 값을 제대로 구하려면 세 가지가 필요하다. <b>① 세 평가자의 편향을 한꺼번에</b> 추정해 (4)처럼 서로의 기준선에 섞이지 않게 하고, <b>② 학생 품질과 답의 위치를 통제</b>하고, <b>③ 그 결과가 우연인지 판단할 불확실성</b>(신뢰구간, p값)을 계산해야 한다. 이를 위해 (4)의 "중립 심판" 아이디어를 순위 자료의 표준 모형에 넣었다.</p>
+
+  <div class="note"><b>용어 정리 (이 포스터 전체에서 같은 뜻으로 쓴다)</b>
+  <div class="tw"><table class=""><thead><tr><th>구분</th><th>이름</th><th>뜻</th><th>단위</th></tr></thead><tbody><tr><td>지표 (원자료 요약)</td><td><b>1위 비율</b></td><td>평가자가 그 학생을 1위로 놓은 비율</td><td>%, 기준 33.3%</td></tr><tr><td>지표 (원자료 요약)</td><td><b>쌍대 승률</b></td><td>순위를 1:1 대결로 풀었을 때 그 학생이 이긴 비율</td><td>%, 기준 50%</td></tr><tr><td>계산</td><td><b>단순 계산</b></td><td>같은 학생에 대해 [자기 계열 평가자의 지표] − [다른 두 평가자 지표의 평균]. (4)의 함정이 있다</td><td>%p</td></tr><tr><td>통계 모형</td><td><b>① 1위 모형</b> (보조)</td><td>순위 중 '1위 선택'만 써서 자기 계열 효과 λ를 추정</td><td><b>1위 확률 차</b> %p (33.3% 대비)</td></tr><tr><td>통계 모형</td><td><b>② 순위 로짓 모형(PL)</b> (주 모형)</td><td>1·2·3위 순위 전체로 λ를 추정</td><td><b>승률 차</b> %p (50% 대비)</td></tr><tr><td>통계 모형</td><td><b>③ 쌍 고정효과 모형(LPM)</b> (강건성)</td><td>1:1 대결 자료에서 같은 두 답의 품질 차이를 지우고 λ를 추정</td><td><b>승률 차</b> %p</td></tr></tbody></table></div>
+  <p style="margin-bottom:0"><b>쌍대 승률은 지표이고 LPM은 모형이다.</b> 쌍대 승률은 원자료를 요약한 숫자다. ②·③은 그 승률에서 품질·위치·다른 평가자의 편향을 걸러 내고 남는 "자기 계열 때문에 오른 승률(승률 차)"을 추정하는 모형이다.</p></div>
+
+  <h3>순위 로짓 모형을 쉽게: 심사위원의 마음속 점수를 거꾸로 맞추기</h3>
+  <div class="note"><b>한 줄 요약.</b> 심사위원은 접시마다 마음속으로 점수를 매기고, 점수가 높은 순서로 순위를 쓴다고 본다. 그 점수는 <b>견습생 실력 + 자리 보너스 + 같은 학교 보너스</b>의 합이다. 우리는 세 가지를 모르고, 실제로 나온 순위 4,500개만 안다. 그래서 모형은 세 가지에 여러 값을 넣어 보며 <b>"이 값이라면 실제 순위 4,500개가 나올 확률이 가장 높다"</b>는 조합을 찾는다. 시험 결과(순위)만 보고 학생 실력, 앞자리 이점, 담임의 편애가 각각 얼마였는지 거꾸로 추리하는 것과 같다. 이 연구가 알고 싶은 값은 그중 <b>같은 학교 보너스 λ</b>이고, 심사위원마다 하나씩(λ<sub>GPT</sub>, λ<sub>Claude</sub>, λ<sub>Gemini</sub>) 있다.</div>
+  <p><b>1단계, 점수.</b> 평가자가 답 세 개를 볼 때, 답마다 보이지 않는 점수 <i>u</i>를 매긴다고 본다. 점수는 세 부분의 합이다.</p>
+<pre>점수 u = 학생 품질 θ  +  위치 가산점 δ  +  (평가자와 같은 계열이면) 자기 계열 가산점 λ</pre>
+  <p><b>2단계, 점수 → 순위 확률.</b> 점수가 높을수록 1위로 뽑힐 확률이 크다. 1위로 뽑힐 확률은 e<sup>u</sup>를 세 답의 e<sup>u</sup> 합으로 나눈 값이고, 1위가 정해지면 남은 두 답 중에서 같은 방식으로 2위를 고른다.</p>
+  <p><b>예.</b> Gemini 평가자에게 A = GPT 학생, B = Claude 학생, C = Gemini 학생의 답을 보여 줬다. 세 학생의 품질은 같고(θ = 0), 위치 가산점은 A 0.6, B 0.2, C 0, Gemini 평가자의 자기 계열 가산점은 λ = 0.85(품질이 같은 상대를 70% 확률로 이기게 만드는 크기)라고 하자.</p>
+  <div class="tw"><table class=""><thead><tr><th>답</th><th>학생</th><th class="num">품질 θ</th><th class="num">위치 δ</th><th class="num">자기 계열 λ</th><th class="num">점수 u</th><th class="num">e<sup>u</sup></th><th class="num">1위로 뽑힐 확률</th></tr></thead><tbody><tr><td>A</td><td>GPT 학생</td><td class='num'>0</td><td class='num'>0.6</td><td class='num'>0</td><td class='num'>0.60</td><td class='num'>1.82</td><td class='num'>1.82 ÷ 5.38 = <b>34%</b></td></tr><tr><td>B</td><td>Claude 학생</td><td class='num'>0</td><td class='num'>0.2</td><td class='num'>0</td><td class='num'>0.20</td><td class='num'>1.22</td><td class='num'>1.22 ÷ 5.38 = <b>23%</b></td></tr><tr><td>C</td><td>Gemini 학생</td><td class='num'>0</td><td class='num'>0</td><td class='num'>0.85</td><td class='num'>0.85</td><td class='num'>2.33</td><td class='num'>2.33 ÷ 5.38 = <b>43%</b></td></tr></tbody></table></div>
+<pre>순위 "C ≻ A ≻ B"가 나올 확률
+  = P(C가 1위) × P(남은 A, B 중 A가 2위)
+  = 0.43 × 1.82 ÷ (1.82 + 1.22)
+  = 0.43 × 0.60 = 0.26</pre>
+  <p>품질이 같은데도 Gemini 학생이 1위로 뽑힐 확률이 43%로 가장 높다. λ 때문이다. A에 놓인 GPT 학생이 B의 Claude 학생보다 높은 것은 δ(위치) 때문이다.</p>
+  <p><b>3단계, 추정.</b> 실제로는 θ, δ, λ를 모른다. 모형은 4,500개의 실제 순위를 보고, <b>그 순위들이 나올 확률이 가장 커지는</b> θ, δ, λ 값을 찾는다(최대우도법). 위 계산을 4,500번 하고 값을 조금씩 바꿔 가며 가장 잘 맞는 조합을 고르는 것이다.</p>
+  <p><b>4단계, 왜 통제가 되는가.</b> (4)의 예시(Gemini 평가자만 편향)를 모형은 다음처럼 설명한다. 모든 순위를 <b>세 모수 중 가장 잘 맞는 것</b>에 배정하기 때문에, 한 평가자의 편향이 다른 학생이나 다른 평가자에게 넘어가지 않는다.</p>
+  <div class="tw"><table class=""><thead><tr><th>자료에서 보이는 패턴</th><th>모형이 설명하는 방법</th><th>결과</th></tr></thead><tbody><tr><td>어느 평가자든, 어느 학생이든 A에 놓이면 1위가 잦다</td><td>모든 학생에게 똑같이 일어나므로 위치 가산점 δ<sub>A</sub>가 설명</td><td>위치 효과는 누구의 품질이나 편향에도 들어가지 않음</td></tr><tr><td>세 평가자 모두 GPT 학생 vs Claude 학생은 50:50</td><td>품질 θ<sub>GPT</sub> = θ<sub>Claude</sub>, 이 쌍에서 GPT·Claude 평가자의 가산점 없음</td><td>λ<sub>GPT</sub> = λ<sub>Claude</sub> = 0</td></tr><tr><td>Claude 평가자(중립)는 GPT 학생 vs Gemini 학생 50:50인데 Gemini 평가자는 30:70</td><td>품질은 같고(중립 심판 기준) Gemini 평가자만 Gemini 학생에게 가산점</td><td>λ<sub>Gemini</sub> = 0.85 (승률 차 +20%p)</td></tr><tr><td>Gemini 평가자 아래에서 GPT·Claude 학생의 승률이 40%로 낮다</td><td>옆의 Gemini 학생이 λ<sub>Gemini</sub>만큼 올라가 밀려난 것으로 설명됨. GPT·Claude 학생의 품질 θ나 GPT·Claude 평가자의 λ로 돌리지 않음</td><td>가짜 누출이 생기지 않음</td></tr></tbody></table></div>
+  <div class="note" style="margin-bottom:0"><b>핵심 차이.</b> 단순 계산은 "Gemini 평가자가 GPT 학생에게 준 40%"를 GPT 학생의 기준선에 그대로 넣는다. 그래서 공정한 GPT 평가자가 +5%p 편향된 것처럼 보인다. 순위 로짓 모형은 그 40%가 <b>Gemini 학생의 가산점 λ<sub>Gemini</sub> 때문에 밀려난 결과</b>라는 것을 같은 순위 안의 정보로 알아낸다. Gemini 평가자 아래에서도 GPT 학생 vs Claude 학생은 50:50이고, 낮아지는 것은 Gemini 학생과 함께 있을 때뿐이기 때문이다. 그래서 각 평가자의 λ만 깨끗하게 남는다.</div>
+  <p><b>5단계, λ를 사람이 읽는 숫자로.</b> λ는 로그 오즈라는 단위라 직관적이지 않다. 그래서 <b>"실력과 자리가 똑같은 상대와 붙었을 때, 같은 계열 학생이 이길 확률이 50%에서 몇 %p 오르는가"</b>로 바꿔 읽는다. 예를 들어 Gemini 평가자의 +9.8%p는 실력이 같아도 Gemini 학생이 이길 확률이 50%가 아니라 약 60%라는 뜻이다. 공정한 동전이 60:40으로 기운 셈이다.</p>
+
+  <h3>모형을 식으로 쓰면</h3>
+  <div class="cols"><div>
+  <p><b>주 모형: 순위 로짓 모형 (Plackett–Luce).</b> 평가자 <i>j</i>가 평가 항목 <i>i</i>(질문 × seed × 제시 순서)에서 학생 <i>t</i>의 답에 부여하는 효용(잠재 점수)을</p>
+  <div class="eq"><i>u<sub>jit</sub></i> = <i>θ</i><sub><i>s</i>(<i>i</i>),<i>t</i></sub> + <i>δ</i><sub><i>j</i>,<i>a</i>(<i>i</i>,<i>t</i>)</sub> + <i>λ<sub>j</sub></i> · 𝟙[<i>t</i> = <i>j</i>]</div>
+  <p>로 두고, 평가자가 매긴 순위 <i>π</i> = (<i>π</i><sub>1</sub> ≻ <i>π</i><sub>2</sub> ≻ <i>π</i><sub>3</sub>)의 확률을</p>
+  <div class="eq">P(<i>π</i> | <i>j</i>, <i>i</i>) = <span class="frac"><span>exp(<i>u<sub>jiπ<sub>1</sub></sub></i>)</span><span>Σ<sub><i>k</i>∈{<i>π</i><sub>1</sub>,<i>π</i><sub>2</sub>,<i>π</i><sub>3</sub>}</sub> exp(<i>u<sub>jik</sub></i>)</span></span> × <span class="frac"><span>exp(<i>u<sub>jiπ<sub>2</sub></sub></i>)</span><span>exp(<i>u<sub>jiπ<sub>2</sub></sub></i>) + exp(<i>u<sub>jiπ<sub>3</sub></sub></i>)</span></span></div>
+  <p>로 모형화한다. 순위를 "세 답 중 1위를 고르고, 남은 둘 중 2위를 고르는" 두 번의 선택으로 보는 것이다. 순위 4,500개의 로그우도 Σ log P를 최대로 하는 값으로 모수를 추정한다(최대우도법).</p>
+  <div class="tw"><table class=""><thead><tr><th>기호</th><th>뜻</th></tr></thead><tbody><tr><td><i>j</i></td><td>평가자 ∈ {GPT, Claude, Gemini}</td></tr><tr><td><i>i</i></td><td>평가 항목 = 질문 × seed × 제시 순서 (평가자마다 1,500개)</td></tr><tr><td><i>t</i></td><td>학생의 교사 계열 ∈ {GPT, Claude, Gemini}. 한 항목에는 같은 seed의 세 학생이 들어 있다</td></tr><tr><td><i>s</i>(<i>i</i>)</td><td>항목 <i>i</i>의 seed (42~46)</td></tr><tr><td><i>a</i>(<i>i</i>,<i>t</i>)</td><td>항목 <i>i</i>에서 학생 <i>t</i>의 답이 놓인 위치 ∈ {A, B, C}</td></tr><tr><td><i>θ<sub>s,t</sub></i></td><td><b>학생 품질</b>: seed <i>s</i>의 <i>t</i> 학생이 세 평가자에게 공통으로 받는 강함 (15명; seed마다 GPT 학생 = 0 기준)</td></tr><tr><td><i>δ<sub>j,a</sub></i></td><td><b>위치 효과</b>: 평가자 <i>j</i>가 위치 <i>a</i>의 답에 주는 가산점 (C = 0 기준, 평가자마다 따로)</td></tr><tr><td><i>λ<sub>j</sub></i></td><td><b>선호 누출</b>: 평가자 <i>j</i>가 자기 계열 학생에게 주는 추가 점수(로그 오즈). 관심 모수. 0이면 공정</td></tr><tr><td>𝟙[<i>t</i> = <i>j</i>]</td><td>학생이 평가자와 같은 계열이면 1, 아니면 0</td></tr><tr><td><i>π</i><sub>1</sub>, <i>π</i><sub>2</sub>, <i>π</i><sub>3</sub></td><td>평가자가 1·2·3위로 매긴 학생</td></tr></tbody></table></div>
+  <div class="note"><b>왜 λ<sub><i>j</i></sub> · 𝟙[<i>t</i> = <i>j</i>] 항을 넣었나: 연구 가설을 모형 안에 옮긴 것</b>
+  <p>이 연구의 가설(H1)은 <b>"평가자는 품질이 같다면 자기와 같은 계열의 데이터로 학습한 학생을 더 높게 평가한다"</b>이다. 이 가설을 모형 안에 그대로 옮긴 것이 λ<sub><i>j</i></sub> · 𝟙[<i>t</i> = <i>j</i>] 항이다.</p>
+  <ul>
+    <li><b>𝟙[<i>t</i> = <i>j</i>] (같은 계열 지표):</b> 학생이 평가자와 같은 계열일 때만 1이 된다. 그래서 가산점 λ<sub><i>j</i></sub>는 <b>자기 계열 학생에게만</b> 붙는다. 예: GPT 평가자가 GPT 학생을 볼 때만 λ<sub>GPT</sub>가 더해지고, Claude·Gemini 학생을 볼 때는 더해지지 않는다.</li>
+    <li><b>평가자마다 따로 λ<sub><i>j</i></sub>:</b> 세 평가자의 편향 크기가 다를 수 있으므로 λ<sub>GPT</sub>, λ<sub>Claude</sub>, λ<sub>Gemini</sub>를 각각 추정한다. 하나의 공통 λ로 두면 "어느 평가자에게 편향이 있는가"를 답할 수 없다.</li>
+    <li><b>품질·위치와 분리:</b> 같은 식 안에 학생 품질 θ와 위치 효과 δ가 함께 있으므로, λ는 "품질과 위치를 같게 맞췄을 때 같은 계열이라서 더 받는 점수"만 나타낸다.</li>
+    <li><b>이 항이 없으면:</b> 모형은 "평가자 계열과 무관하게 품질과 위치만으로 순위가 정해진다"(누출 없음)는 모형이 된다. 즉 λ<sub><i>j</i></sub> = 0이 귀무가설에 해당한다.</li>
+  </ul>
+  <p><b>이 항으로 검정하는 가설 (평가자 <i>j</i>마다):</b></p>
+<pre>귀무가설 H0: λ_j = 0   평가자 j는 품질·위치가 같으면 자기 계열 학생을 다른 학생과 똑같이 평가한다 (선호 누출 없음)
+대립가설 H1: λ_j ≠ 0   같은 조건에서 자기 계열 학생을 다르게 평가한다
+                        (연구 가설의 예상 방향은 λ_j &gt; 0: 더 높게 평가)</pre>
+  <p style="margin-bottom:0">양측 검정으로 둔 이유는 자기 계열을 오히려 낮게 보는 경우(λ<sub><i>j</i></sub> &lt; 0)도 확인하기 위해서다. 검정 방법(부트스트랩 p값, Holm 보정)은 (6)에, 판정은 7.2에 있다. 또 "자기 계열에만 가산점이 붙고, 자기 계열이 아닌 두 학생은 품질 외에는 똑같이 대한다"는 이 항의 형태 자체가 가정이므로, 모든 평가자 × 학생 조합에 별도 효과를 둔 일반 모형과 우도비 검정으로 비교해 확인했다(최종 순위 p = 0.98, 가정이 자료와 맞음).</p></div>
+  <p><b>λ를 확률로 읽기.</b> 이 모형에서 학생 <i>t</i>가 <i>t′</i>보다 위에 놓일 확률은 정확히 σ(<i>u<sub>t</sub></i> − <i>u<sub>t′</sub></i>) = 1 / (1 + e<sup>−(<i>u<sub>t</sub></i> − <i>u<sub>t′</sub></i>)</sup>)이다. 따라서 품질과 위치가 같은 두 답이라면 자기 계열 답이 이길 확률은 σ(<i>λ<sub>j</sub></i>)이고, 50%에서 σ(<i>λ<sub>j</sub></i>) − 50%만큼 오른다(이 문서의 "승률 %p"). e<sup><i>λ<sub>j</sub></i></sup>는 오즈비다.</p>
+  </div><div>
+  <p><b>세 평가자의 λ가 분리되는 이유.</b> 학생 <i>t</i>와 <i>t′</i>의 효용 차이를 평가자별로 쓰면(위치 효과 생략)</p>
+  <div class="eq" style="text-align:left">GPT 평가자: <i>θ</i><sub>GPT</sub> − <i>θ</i><sub>Claude</sub> + <i>λ</i><sub>GPT</sub><br>Claude 평가자: <i>θ</i><sub>GPT</sub> − <i>θ</i><sub>Claude</sub> − <i>λ</i><sub>Claude</sub><br>Gemini 평가자: <i>θ</i><sub>GPT</sub> − <i>θ</i><sub>Claude</sub> &nbsp;(중립 심판)</div>
+  <p>중립 심판의 판정이 품질 차이(<i>θ</i><sub>GPT</sub> − <i>θ</i><sub>Claude</sub>)를 알려 주고, 나머지 두 평가자의 판정에서 그것을 빼면 <i>λ</i>가 남는다. 쌍 3개 × 평가자 3명의 정보로 품질 차 2개와 <i>λ</i> 3개를 함께 추정할 수 있다. (4)의 예시에 적용하면 <i>λ</i><sub>GPT</sub> = 0, <i>λ</i><sub>Claude</sub> = 0, <i>λ</i><sub>Gemini</sub> &gt; 0이 나온다.</p>
+  <div class="note"><b>"학생 품질" θ는 무엇인가?</b> 평가자가 따로 매긴 점수나 사람이 정한 정답 품질이 아니다. 모형 안에서 λ, δ와 함께 추정되는 <b>숨은 값</b>으로, 자기 계열 가산점(λ)과 위치 효과(δ)를 빼고 나서 <b>세 평가자의 순위에 공통으로 남는 학생의 강함</b>이다. 즉 "세 평가자가 공통으로 인정한 품질"이다. 학생 15명(교사 × seed)마다 하나씩 있고, 같은 seed의 세 학생끼리만 비교되므로 seed마다 GPT 학생을 0으로 두고 나머지를 그 대비 값으로 추정한다. 질문마다 달라지는 품질은 θ에 들어가지 않아, 이 부분은 아래 ③ 쌍 고정효과 모형(LPM)이 따로 흡수한다.</div>
+  </div></div>
+
+  <h3>세 가지 모형: 무엇이고, 원래 있는 모형인가</h3>
+  <div class="tw"><table class=""><thead><tr><th>모형</th><th>어떤 모형인가</th><th>출처 (표준 모형)</th><th>이 연구에서의 역할</th></tr></thead><tbody><tr><td><b>② 순위 로짓<br>(Plackett–Luce, 주 모형)</b></td><td>순위를 '1위 선택 → 남은 것 중 2위 선택'의 연속된 선택으로 보고, 각 선택 확률을 softmax(로짓)로 두는 순위 자료 모형. 두 개만 비교하면 Bradley–Terry 모형(쌍대 비교 모형)과 같다. 위 식 그대로다.</td><td>Luce(1959)의 선택 공리, Plackett(1975). 계량경제학에서는 rank-ordered(exploded) logit으로 쓰인다(Beggs et al., 1981). 조건부 로짓으로 추정한다.</td><td>1·2·3위 정보를 모두 써서 λ를 추정. 결과를 쌍대 승률 %p로 읽는다.</td></tr><tr><td><b>① 1위 모형<br>(조건부 로짓, 보조)</b></td><td>같은 효용 식에서 '세 답 중 1위 선택'만 쓰는 다항(조건부) 로짓. 위 확률식의 첫 번째 분수만 쓴다.</td><td>McFadden의 조건부 로짓(이산 선택 모형의 표준).</td><td>1위 비율에 대응. λ를 e<sup>λ</sup>/(e<sup>λ</sup>+2) − 33.3%로 읽는다.</td></tr><tr><td><b>③ 쌍 고정효과 선형확률모형<br>(LPM, 강건성)</b></td><td>순위를 1:1 대결로 풀어 y = 1(앞 학생이 이김)을 종속변수로 한 선형 회귀. 같은 묶음의 같은 두 답(쌍)마다 고유 절편 α<sub>쌍</sub>(고정효과)을 둔다:<br><i>y<sub>jrp</sub></i> = <i>α<sub>p</sub></i> + Σ<sub><i>k</i></sub> <i>λ<sub>k</sub></i>(𝟙[<i>j</i>=<i>k</i>, 앞 학생=<i>k</i>] − 𝟙[<i>j</i>=<i>k</i>, 뒤 학생=<i>k</i>]) + 위치 항 + <i>ε</i></td><td>선형확률모형과 고정효과(within) 추정은 패널 자료 분석의 표준 방법. 표준오차는 질문 단위 군집 강건 표준오차(Cameron &amp; Miller, 2015).</td><td>α<sub>쌍</sub>가 그 질문에서 두 답의 품질 차이(내용, 길이, 난이도)를 통째로 흡수 → 가장 엄격한 확인. λ가 바로 %p로 읽힌다.</td></tr></tbody></table></div>
+  <p class="m">세 모형 모두 통계학·계량경제학에서 널리 쓰이는 기존 모형이다. 이 연구가 새로 설계한 것은 모형 자체가 아니라, 평가자 × 같은 계열 지표 𝟙[<i>t</i> = <i>j</i>]를 넣고 "쌍마다 중립 심판이 있다"는 구조를 이용해 세 평가자의 선호 누출 λ를 동시에 식별한 점이다.</p>
+  <ul>
+    <li><b>통제:</b> 학생 품질(15명)과 평가자별 위치 효과를 모형에 넣는다. 각 학생이 각 위치에 같은 횟수로 놓였으므로 위치 효과가 λ에 섞이지 않는다.</li>
+    <li><b>표준오차와 검정:</b> 질문 단위 부트스트랩 1,000회로 신뢰구간과 p값을 구하고, 평가자 3명을 함께 검정하므로 Holm 보정 p로 판단한다. 두 도구의 개념과 적용 방법은 바로 아래 (6)에, 평가자별 판정은 7.2에 있다.</li>
+    <li><b>가정 확인:</b> "평가자는 자기 계열이 아닌 두 학생을 품질 외에는 똑같이 대한다"는 가정을 우도비 검정으로 확인했다(최종 순위 p = 0.98, 기각되지 않음). 정답을 아는 가짜 자료에서 모형이 누출이 없으면 0을, 있으면 같은 방향(크기는 다소 작게, 보수적)을 되찾는 것도 확인했다.</li>
+  </ul>
+
+  <h3>(6) 우연이 아닌지 확인하는 두 도구: 부트스트랩과 Holm 보정</h3>
+  <p>모형이 "Gemini +9.8%p"를 내놓아도, 이 숫자는 질문 100개로 얻은 값이다. 질문이 달랐다면 값이 조금 달랐을 것이다. 이 흔들림의 크기를 재는 도구가 <b>부트스트랩</b>이고, 평가자 셋을 한꺼번에 검정할 때 생기는 "우연한 당첨"을 막는 도구가 <b>Holm 보정</b>이다.</p>
+
+  <h3>먼저: 결과를 흔들 수 있는 우연은 세 가지다</h3>
+  <p>"Gemini +9.8%p"가 진짜 효과인지 의심할 수 있는 이유는 하나가 아니다. 이 연구의 평가 자료는 <b>질문 → 묶음 → 답변 → 판정</b>의 층으로 쌓여 있고(그림 6-0), 층마다 다른 종류의 우연이 끼어들 수 있다.</p>
+  <figure><svg class="chart" viewBox="0 0 760 372" role="img" aria-label="질문 하나 아래에 묶인 답변과 판정의 구조" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><rect x="220" y="8" width="320" height="46" rx="6" fill="var(--card)" stroke="var(--ink)" stroke-width="1.6"/><text x="380" y="27" class="lab b" text-anchor="middle">질문 1개 (예: 펭귄 털색깔 질문)</text><text x="380" y="45" class="tick" text-anchor="middle">아래의 답변과 판정이 모두 이 질문에 딸려 있다</text><line x1="380" y1="54" x2="84" y2="90" class="axis"/><rect x="20" y="90" width="128" height="34" rx="6" fill="var(--surface)" stroke="var(--ink)" stroke-width="1.8"/><text x="84" y="112" class="lab b" text-anchor="middle">seed 42 묶음</text><line x1="380" y1="54" x2="230" y2="90" class="axis"/><rect x="166" y="90" width="128" height="34" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="230" y="112" class="lab" text-anchor="middle">seed 43 묶음</text><line x1="380" y1="54" x2="376" y2="90" class="axis"/><rect x="312" y="90" width="128" height="34" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="376" y="112" class="lab" text-anchor="middle">seed 44 묶음</text><line x1="380" y1="54" x2="522" y2="90" class="axis"/><rect x="458" y="90" width="128" height="34" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="522" y="112" class="lab" text-anchor="middle">seed 45 묶음</text><line x1="380" y1="54" x2="668" y2="90" class="axis"/><rect x="604" y="90" width="128" height="34" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="668" y="112" class="lab" text-anchor="middle">seed 46 묶음</text><text x="595" y="140" class="tick" text-anchor="middle">seed 43~46 묶음도 아래와 같은 구조</text><line x1="84" y1="124" x2="75" y2="160" class="axis"/><rect x="20" y="160" width="110" height="30" rx="6" fill="var(--surface)" stroke="var(--c-gpt)" stroke-width="2"/><text x="75" y="180" class="lab" text-anchor="middle">GPT 학생 답</text><line x1="84" y1="124" x2="195" y2="160" class="axis"/><rect x="140" y="160" width="110" height="30" rx="6" fill="var(--surface)" stroke="var(--c-claude)" stroke-width="2"/><text x="195" y="180" class="lab" text-anchor="middle">Claude 학생 답</text><line x1="84" y1="124" x2="315" y2="160" class="axis"/><rect x="260" y="160" width="110" height="30" rx="6" fill="var(--surface)" stroke="var(--c-gemini)" stroke-width="2"/><text x="315" y="180" class="lab" text-anchor="middle">Gemini 학생 답</text><line x1="190" y1="190" x2="190" y2="214" class="axis"/><text x="200" y="208" class="tick" text-anchor="start">순서 3가지 × 평가자 3명</text><text x="75" y="232" class="tick" text-anchor="middle">GPT 평가자</text><rect x="20" y="240" width="110" height="28" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="75" y="259" class="lab" text-anchor="middle">순서 1: 1·2·3위</text><rect x="20" y="274" width="110" height="28" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="75" y="293" class="lab" text-anchor="middle">순서 2: 1·2·3위</text><rect x="20" y="308" width="110" height="28" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="75" y="327" class="lab" text-anchor="middle">순서 3: 1·2·3위</text><text x="195" y="232" class="tick" text-anchor="middle">Claude 평가자</text><rect x="140" y="240" width="110" height="28" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="195" y="259" class="lab" text-anchor="middle">순서 1: 1·2·3위</text><rect x="140" y="274" width="110" height="28" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="195" y="293" class="lab" text-anchor="middle">순서 2: 1·2·3위</text><rect x="140" y="308" width="110" height="28" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="195" y="327" class="lab" text-anchor="middle">순서 3: 1·2·3위</text><text x="315" y="232" class="tick" text-anchor="middle">Gemini 평가자</text><rect x="260" y="240" width="110" height="28" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="315" y="259" class="lab" text-anchor="middle">순서 1: 1·2·3위</text><rect x="260" y="274" width="110" height="28" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="315" y="293" class="lab" text-anchor="middle">순서 2: 1·2·3위</text><rect x="260" y="308" width="110" height="28" rx="6" fill="var(--surface)" stroke="var(--axis)" stroke-width="1.2"/><text x="315" y="327" class="lab" text-anchor="middle">순서 3: 1·2·3위</text><rect x="400" y="160" width="340" height="206" rx="6" fill="var(--card)" stroke="var(--line)" stroke-width="1"/><text x="416" y="186" class="lab" text-anchor="start">묶음 1개 = 같은 seed 학생 3명의 답변 3개</text><text x="416" y="216" class="lab" text-anchor="start">묶음 1개 → 판정 9번 (순서 3 × 평가자 3)</text><text x="416" y="246" class="lab b" text-anchor="start">질문 1개 → 묶음 5개 × 9 = 판정 45번</text><text x="416" y="276" class="lab" text-anchor="start">질문 100개 → 판정 4,500번</text><text x="416" y="314" class="tick" text-anchor="start">같은 질문의 판정 45번은 함께 움직인다</text><text x="416" y="336" class="tick" text-anchor="start">→ 부트스트랩은 45번을 한 덩어리로 뽑는다</text></svg><figcaption>그림 6-0. 평가 자료의 묶음 구조. 질문 하나 아래에 seed마다 묶음(같은 seed의 세 학생 답변)이 하나씩 있고, 묶음마다 순서 3가지 × 평가자 3명 = 9번 순위를 매겼다. 굵은 테두리 = 펼쳐 보인 seed 42 묶음.</figcaption></figure>
+  <p><b>그림 6-0 읽기: 평가한 것은 답변인데 왜 "질문"을 말하나.</b> 평가자가 순위를 매긴 대상은 학생의 <b>답변</b>이다. 하지만 모든 답변은 어떤 <b>질문</b>에 대한 답이다. 질문 하나(예: "어른 펭귄과 새끼 펭귄의 털색깔이 다른 이유는?")에는 학생 15명의 답변 15개가 딸려 있고, 같은 seed의 세 답변을 한 묶음으로 평가자 3명이 순서를 바꿔 3번씩 순위를 매겼다. 그래서 판정 4,500개는 서로 따로 떨어진 4,500개가 아니라 <b>질문 100개 아래에 45개씩</b> 묶여 있다.</p>
+  <ul>
+    <li><b>왜 같이 움직이나:</b> 쉬운 질문이면 세 학생 모두 그럴듯하게 답하고, 어려운 질문이면 모두 엉터리로 답한다. 어떤 질문은 주제 자체가 번호 목록식 설명에 잘 맞아 Gemini 학생 스타일이 유리할 수 있다. 그러면 그 질문의 판정 45개가 <b>한꺼번에</b> 한쪽으로 기운다.</li>
+    <li><b>그래서:</b> 질문 몇 개가 우연히 한쪽에 유리했다면, 판정 수(4,500)만 보고 "자료가 많으니 확실하다"고 말할 수 없다. 실제로 독립적인 정보의 단위는 질문(100개)이다.</li>
+  </ul>
+  <div class="tw"><table class=""><thead><tr><th>결과를 흔들 수 있는 우연</th><th>확인 도구</th><th>바꿔 보는 것</th><th>그대로 두는 것</th><th>이 도구가 없으면 남는 의심</th></tr></thead><tbody>
+  <tr><td><b>① 질문 선택의 우연</b><br><span class="m">"다른 질문 100개로 평가했다면?"</span></td><td><b>질문 단위 부트스트랩</b></td><td>평가 질문 (질문에 딸린 판정 45개째로)</td><td>학생 15명</td><td>우연히 Gemini 학생에게 유리한 질문이 많이 뽑힌 것 아닌가</td></tr>
+  <tr><td><b>② 학생 학습의 우연</b><br><span class="m">"학생을 다시 학습했다면?"</span></td><td><b>seed 5번 반복</b> (6.5)</td><td>학생 모델 (같은 교사 데이터로 새로 학습)</td><td>질문 100개</td><td>한 번의 학습에서 우연히 교사 문체를 유난히 강하게 배운 학생이 나온 것 아닌가</td></tr>
+  <tr><td><b>③ 여러 번 검정한 우연</b><br><span class="m">"평가자 셋을 다 검정했으니 하나쯤은?"</span></td><td><b>Holm 보정</b></td><td>유의하다고 판정하는 p값 문턱</td><td>자료와 추정치</td><td>공정한 평가자 하나가 우연히 "편향됨"으로 판정될 확률이 최대 14%까지 커짐</td></tr>
+  </tbody></table></div>
+  <p class="m">표 6-0. 세 가지 우연과 그것을 확인하는 도구. 요리 대회로 보면 ①은 "다른 요리 주제로 대회를 다시 열기", ②는 "견습생을 처음부터 다시 길러 보기", ③은 "심사위원 셋을 다 조사했으니 하나쯤은 우연히 걸릴 수 있다는 점을 감안하기"다.</p>
+  <p><b>왜 하나만 쓰면 부족한가.</b></p>
+  <ul>
+    <li><b>seed 반복만 쓰면:</b> (1) 다섯 seed 모두 <b>같은 질문 100개</b>로 평가했으므로, 그 100개가 우연히 Gemini 쪽에 유리했다면 다섯 seed가 모두 양수여도 질문 탓을 걸러 낼 수 없다. (2) 값이 5개뿐이라 검정력이 약하다. 5개가 모두 양수일 때 부호 검정 p는 0.5<sup>5</sup> = 0.031로 이것이 가능한 최솟값이고, 평가자 3명에 Holm 보정을 하면 0.094가 되어 <b>효과가 아무리 커도 5% 기준을 넘을 수 없다</b>. (3) 주 결과 +9.8%p는 판정 4,500개를 한 모형에 넣어 얻은 값이라, 그 신뢰구간은 seed 5개로 구할 수 없다.</li>
+    <li><b>부트스트랩만 쓰면:</b> 질문을 아무리 다시 뽑아도 답변을 쓴 학생 15명은 그대로다. "이 학생들이 우연히 그렇게 학습된 것 아닌가"에는 답하지 못한다. 이 질문에는 학생을 새로 학습한 seed 반복만 답할 수 있다.</li>
+    <li><b>Holm 보정은 앞의 두 도구 위에 얹는다:</b> 부트스트랩과 seed 검정이 각각 p값을 주면, Holm 보정은 그 p값을 "평가자 셋을 함께 검정했다"는 사실에 맞게 엄격하게 고친다. 혼자서는 자료의 흔들림을 재지 못한다.</li>
+  </ul>
+  <p>그래서 Gemini의 효과가 진짜라고 말하려면 <b>세 의심을 모두 통과</b>해야 한다. 아래에서 부트스트랩과 Holm 보정을 차례로 설명하고, seed 반복의 결과는 6.5에 있다.</p>
+  <div class="cols"><div>
+  <h3>부트스트랩: 대회를 1,000번 다시 열어 보기</h3>
+  <p><b>개념.</b> 부트스트랩(Efron, 1979)은 가진 표본을 모집단 대신 쓰는 방법이다. 표본에서 <b>복원추출</b>로 같은 크기의 "다시 뽑은 표본"을 많이 만들고, 매번 같은 통계량을 다시 계산해 그 값이 얼마나 흔들리는지 직접 본다. 수식으로 표준오차를 유도하기 어렵거나 자료가 서로 독립이 아닐 때 쓴다.</p>
+  <p><b>주머니 예시.</b> 질문 100개를 카드 100장에 적어 주머니에 넣는다. 카드 한 장에는 질문 하나와 <b>그 질문에 딸린 판정 45개</b>(그림 6-0)가 통째로 붙어 있다. 한 장을 뽑아 적고 <b>다시 넣는다</b>. 이를 100번 하면 새 자료가 생긴다. 어떤 카드는 두세 번 뽑히고, 약 37%의 카드는 한 번도 안 뽑힌다. 이 새 자료는 "질문이 조금 달랐다면"이라는 가상의 재실험이다.</p>
+<pre>원래 자료        [질문1 + 판정45] [질문2 + 판정45] … [질문100 + 판정45]  (판정 4,500)
+다시 뽑은 자료 1 [질문17 + 판정45] [질문3 + 판정45] [질문3 + 판정45] … (100장)
+                 → 질문3은 두 번(판정 90), 질문1은 이번엔 빠짐 → 모형을 다시 적합 → λ 하나
+다시 뽑은 자료 2 [질문54 …] [질문9 …] …  → λ 하나
+…  1,000번 반복 → λ 1,000개 → 그 퍼진 정도가 신뢰구간과 p값</pre>
+  <p><b>왜 썼나.</b></p>
+  <ul>
+    <li><b>자료가 독립이 아니다:</b> 질문 하나는 seed 5 × 순서 3 × 평가자 3 = 45번 판정되었다. 쉬운 질문이면 45번 판정이 함께 비슷하게 움직인다. 판정 하나하나를 독립으로 보는 일반 공식은 표준오차를 실제보다 작게 계산해 p값이 지나치게 작아질 수 있다. <b>질문을 통째로 뽑으면</b> 이 묶음 구조가 그대로 유지된다(군집 부트스트랩). 판정 하나하나를 따로 뽑으면 같은 질문의 판정이 흩어져 이 묶음이 깨진다.</li>
+    <li><b>%p 값의 공식이 복잡하다:</b> 모형의 λ를 "승률 %p"로 바꾼 값은 표준오차 공식이 복잡하다. 부트스트랩은 바꾼 값을 매번 다시 계산하면 되므로 공식이 필요 없다.</li>
+    <li><b>분포를 가정하지 않는다:</b> 추정치의 분포를 정규분포 등으로 가정하지 않고 자료에서 직접 얻는다.</li>
+  </ul>
+  <p class="m"><b>확인: 판정 단위로 뽑았다면 얼마나 달랐나.</b> 비교를 위해 질문이 아니라 순위 하나하나(평가자 × 묶음 × 순서)를 따로 복원추출하는 부트스트랩을 300번 돌려 보았다. ② 순위 로짓 모형의 95% 신뢰구간은 Gemini [+7.5, +12.1]%p, GPT [+0.3, +6.0]%p, Claude [−4.5, +0.9]%p로, 질문 단위(Gemini [+7.1, +12.5]%p)와 크게 다르지 않았다. 이 자료에서는 질문 묶음의 영향이 크지 않았다는 뜻이다. 다만 이를 미리 알 수 없으므로, 묶음 구조를 지키는 질문 단위 부트스트랩을 주 결과로 쓴다. 결론은 어느 방식으로도 같다.</p>
+  <p><b>이 연구에 적용한 절차.</b></p>
+  <ol>
+    <li>질문 100개에서 100개를 복원추출한다.</li>
+    <li>뽑힌 질문에 딸린 순위(seed 5 × 순서 3 × 평가자 3)를 통째로 가져와 새 자료를 만든다. 두 번 뽑힌 질문은 두 번 들어간다.</li>
+    <li>새 자료로 ① 1위 모형, ② 순위 로짓 모형, ③ 쌍 고정효과 모형을 다시 적합하고, 평가자별 λ와 %p 값을 저장한다.</li>
+    <li>1~3을 1,000번 반복해 평가자마다 추정치 1,000개를 얻는다.</li>
+    <li><b>95% 신뢰구간</b> = 1,000개를 크기순으로 놓았을 때 하위 2.5%(25번째)와 상위 2.5%(975번째) 값.</li>
+    <li><b>p값</b> = 1,000개 중 0의 반대편으로 넘어간 비율 × 2(양측). 한 번도 넘어가지 않으면 "p ≤ 0.001"로 적는다.</li>
+  </ol>
+  <div class="tw"><table class=""><thead><tr><th>평가자 (② PL, 최종 순위)</th><th class="num">1,000개 중 0의 반대편</th><th class="num">p값</th><th class="num">95% 신뢰구간</th></tr></thead><tbody><tr><td>Gemini</td><td class='num'>0개</td><td class='num'>≤ 0.001</td><td class='num'>[+7.1, +12.5]%p</td></tr><tr><td>GPT</td><td class='num'>약 19개</td><td class='num'>0.038</td><td class='num'>[+0.2, +5.3]%p</td></tr><tr><td>Claude</td><td class='num'>약 65개</td><td class='num'>0.130</td><td class='num'>[−4.4, +0.6]%p</td></tr></tbody></table></div>
+  <p class="m">0의 반대편 개수는 p값 ÷ 2 × 1,000으로 환산한 값이다. 반복 횟수는 추정치 자체를 바꾸지 않고 신뢰구간과 p값의 계산 오차만 줄인다. 1,000회면 p값을 0.001 단위까지 구분할 수 있다.</p>
+  </div><div>
+  <h3>Holm 보정: 복권을 여러 장 사면 당첨이 쉬워진다</h3>
+  <p><b>문제.</b> 유의수준 5%로 검정 하나를 하면, 실제로는 효과가 없는데 우연히 "있다"고 판정할 확률(1종 오류)이 5%다. 그런데 평가자 3명을 각각 5%로 검정하면, 셋 중 <b>적어도 하나</b>가 우연히 유의하게 나올 확률(가족별 오류율, FWER)이 최대 1 − 0.95<sup>3</sup> = <b>14.3%</b>까지 커진다.</p>
+  <p><b>동전 예시.</b> 완전히 공정한 동전 세 개를 각각 "앞면이 잘 나오는 동전인가"로 검정한다고 하자. 동전 하나만 보면 우연히 걸릴 확률은 5%지만, 셋 중 하나라도 걸릴 확률은 약 14%다. 동전이 20개면 64%가 된다. 많이 검정할수록 "편향된 동전을 찾았다"는 말을 우연히 하게 된다.</p>
+  <p><b>해결 방법 두 가지.</b></p>
+  <ul>
+    <li><b>Bonferroni:</b> 모든 p값을 0.05 ÷ 3 = 0.0167과 비교한다. 오류율은 확실히 5% 이하로 묶이지만, 진짜 효과도 놓치기 쉽다(보수적).</li>
+    <li><b>Holm(1979):</b> p값을 작은 순서로 정렬해 가장 작은 것은 0.05 ÷ 3, 다음은 0.05 ÷ 2, 마지막은 0.05 ÷ 1과 비교한다. 한 번 통과하지 못하면 그 뒤는 모두 기각하지 않는다. 같은 일을 "p값에 남은 검정 수를 곱한 Holm p를 0.05와 비교"로 쓸 수 있다. 오류율을 5% 이하로 지키면서 Bonferroni보다 진짜 효과를 덜 놓친다.</li>
+  </ul>
+  <p><b>왜 썼나.</b> 이 연구의 결론은 "세 평가자 중 <b>누가</b> 편향되었나"라는 하나의 묶음 질문이다. 셋을 따로 5%로 검정하면 공정한 평가자 하나가 우연히 "편향됨"으로 판정될 위험이 14%까지 커진다. 그래서 평가자 3명을 한 묶음으로 보정했다.</p>
+  <p><b>이 연구에 적용한 결과 (② PL, 최종 순위).</b></p>
+  <div class="tw"><table class=""><thead><tr><th>순서</th><th>평가자</th><th class="num">보정 전 p</th><th class="num">곱하는 수</th><th class="num">Holm p</th><th class="num">비교 기준 (보정 전 p와)</th><th class="num">판정</th></tr></thead><tbody><tr><td>1</td><td>Gemini</td><td class='num'>≤ 0.001</td><td class='num'>× 3</td><td class='num'>≤ 0.003</td><td class='num'>0.05 ÷ 3 = 0.0167</td><td>기각 (유의)</td></tr><tr><td>2</td><td>GPT</td><td class='num'>0.038</td><td class='num'>× 2</td><td class='num'>0.076</td><td class='num'>0.05 ÷ 2 = 0.0250</td><td>기각 못함</td></tr><tr><td>3</td><td>Claude</td><td class='num'>0.130</td><td class='num'>× 1</td><td class='num'>0.130</td><td class='num'>0.05 ÷ 1 = 0.0500</td><td>기각 못함</td></tr></tbody></table></div>
+  <p class="m">GPT는 검정 하나만 보면 0.038 &lt; 0.05라 유의하지만, 셋을 함께 검정한 것을 반영하면 0.076이 되어 5% 기준을 넘지 못한다. Holm p는 앞 단계 값보다 작아지지 않도록 누적 최댓값을 쓴다. 같은 방식으로 기준별 분석(6.6)은 기준 4 × 평가자 3 = 12개를, seed 반복 t검정(6.5)은 평가자 3개를 한 묶음으로 보정했다.</p>
+  </div></div>
+  <div class="note"><b>세 겹의 확인.</b> 이 연구는 "우연이 아니다"를 세 방향에서 확인했다. <b>부트스트랩</b>은 "질문이 달라져도 같은가"를, <b>Holm 보정</b>은 "여러 평가자를 동시에 검정해도 같은가"를, <b>seed 반복</b>(6.5)은 "학생을 다시 학습해도 같은가"를 묻는다. Gemini 평가자의 효과는 세 질문을 모두 통과했다.</div>
+
+
+
+  <h3>6.3 결과 ① 원자료: 평가자는 각 학생을 몇 번 1위·2위·3위로 놓았나 (최종 순위)</h3>
+  <p><b>무엇을 보는가.</b> 모형에 넣기 전의 원자료다. 평가자 한 명이 학생 한 명에게 매긴 순위 1,500번(질문 100 × seed 5 × 순서 3)을 센다.</p>
+  <div class="tw"><table class=""><thead><tr><th>평가자 \ 학생</th><th class="num">GPT 학생</th><th class="num">Claude 학생</th><th class="num">Gemini 학생</th></tr></thead><tbody><tr><td>GPT 평가자</td><td class="num own">709 / 463 / 328</td><td class="num">443 / 524 / 533</td><td class="num">348 / 513 / 639</td></tr><tr><td>Claude 평가자</td><td class="num">653 / 519 / 328</td><td class="num own">473 / 466 / 561</td><td class="num">374 / 515 / 611</td></tr><tr><td>Gemini 평가자</td><td class="num">607 / 466 / 427</td><td class="num">414 / 476 / 610</td><td class="num own">479 / 558 / 463</td></tr></tbody></table></div>
+  <p class="m">표 6-1. 각 칸 = 1위 / 2위 / 3위 횟수(1,500번 중). 굵은 칸 = 자기 계열 평가(예: GPT 평가자 × GPT 학생).</p>
+  <div class="tw"><table class=""><thead><tr><th>평가자 \ 학생</th><th class="num">1위 비율: GPT</th><th class="num">Claude</th><th class="num">Gemini</th><th class="num">쌍대 승률: GPT</th><th class="num">Claude</th><th class="num">Gemini</th></tr></thead><tbody><tr><td>GPT 평가자</td><td class="num own">47.3%</td><td class="num">29.5%</td><td class="num">23.2%</td><td class="num own">62.7%</td><td class="num">47.0%</td><td class="num">40.3%</td></tr><tr><td>Claude 평가자</td><td class="num">43.5%</td><td class="num own">31.5%</td><td class="num">24.9%</td><td class="num">60.8%</td><td class="num own">47.1%</td><td class="num">42.1%</td></tr><tr><td>Gemini 평가자</td><td class="num">40.5%</td><td class="num">27.6%</td><td class="num own">31.9%</td><td class="num">56.0%</td><td class="num">43.5%</td><td class="num own">50.5%</td></tr></tbody></table></div>
+  <p class="m">표 6-2. 표 6-1을 1위 비율(기준 33.3%)과 쌍대 승률(기준 50%)로 바꾼 것.</p>
+  <div class="note"><b>표 6-1·6-2 읽는 법: 가로로 읽지 말고 세로로 읽는다.</b>
+  <ul style="margin-bottom:0">
+    <li><b>가로(한 평가자의 행):</b> 한 평가자가 세 학생을 어떻게 나눠 줬는지다. 예: GPT 평가자 행은 GPT 학생 1위 709번, Gemini 학생 348번이다. 하지만 이 차이에는 <b>학생의 실제 품질 차이와 그 평가자의 자기 계열 가산점이 섞여</b> 있어서, GPT 학생이 정말 나은지 GPT 평가자가 편든 것인지 가로만으로는 구분할 수 없다. 그래서 가로로는 편향이 보이지 않는다.</li>
+    <li><b>세로(같은 학생의 열):</b> <b>같은 학생의 같은 답</b>을 세 평가자가 어떻게 봤는지다. 답이 같으므로 품질 차이가 없고, 차이는 평가자에서 나온다. 자기 계열 평가자의 값이 다른 평가자보다 높으면 자기 계열을 우대했다는 신호다.</li>
+  </ul></div>
+  <p><b>해석.</b></p>
+  <ul>
+    <li><b>학생 품질:</b> 세 평가자의 행 모두에서 GPT 학생이 가장 자주 1위다(1위 비율 40.5~47.3%). 평가자가 누구든 같은 방향이므로 GPT 학생의 답이 실제로 가장 낫다고 볼 수 있다.</li>
+    <li><b>Gemini 학생 열:</b> Gemini 평가자 479번(31.9%), GPT 평가자 348번(23.2%), Claude 평가자 374번(24.9%). 같은 답인데 Gemini 평가자만 100번 이상 더 1위로 놓았다. 세로 차이가 가장 크다.</li>
+    <li><b>GPT 학생 열:</b> GPT 평가자 709번, Claude 653번, Gemini 607번. 자기 계열이 가장 높지만, 여기서 Gemini 평가자의 낮은 값(607)은 Gemini 학생을 올리느라 밀려난 몫일 수 있다(6.2의 함정). 세로 비교도 다른 평가자의 편향에 오염될 수 있어서, 6.4에서 모형으로 분리한다.</li>
+    <li><b>Claude 학생 열:</b> Claude 473번, GPT 443번, Gemini 414번으로 차이가 작다.</li>
+  </ul>
+  <figure><div class="legend"><span><i style="background:var(--c-gpt)"></i>GPT 평가자</span><span><i style="background:var(--c-claude)"></i>Claude 평가자</span><span><i style="background:var(--c-gemini)"></i>Gemini 평가자</span></div><svg class="chart" viewBox="0 0 660 172" role="img" aria-label="점 그림" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><line x1="150" x2="630" y1="144" y2="144" class="axis"/><line x1="218.57142857142856" x2="218.57142857142856" y1="10" y2="144" class="grid"/><text x="218.57142857142856" y="160" class="tick" text-anchor="middle">20%</text><line x1="355.71428571428567" x2="355.71428571428567" y1="10" y2="144" class="grid"/><text x="355.71428571428567" y="160" class="tick" text-anchor="middle">30%</text><line x1="492.8571428571429" x2="492.8571428571429" y1="10" y2="144" class="grid"/><text x="492.8571428571429" y="160" class="tick" text-anchor="middle">40%</text><line x1="630.0" x2="630.0" y1="10" y2="144" class="grid"/><text x="630.0" y="160" class="tick" text-anchor="middle">50%</text><line x1="400.97142857142853" x2="400.97142857142853" y1="8" y2="144" class="ref"/><text x="404.97142857142853" y="16" class="refl">기준선 33.3%</text><text x="140" y="43.0" class="lab" text-anchor="end">GPT 학생</text><line x1="150" x2="630" y1="38.0" y2="38.0" class="grid"/><circle cx="541.3142857142857" cy="38.0" r="6.5" fill="var(--c-claude)" class="dot"><title>Claude 평가자 → GPT 학생: 43.5%</title></circle><circle cx="499.2571428571429" cy="38.0" r="6.5" fill="var(--c-gemini)" class="dot"><title>Gemini 평가자 → GPT 학생: 40.5%</title></circle><circle cx="592.5142857142857" cy="38.0" r="9" fill="var(--c-gpt)" class="dot own"><title>GPT 평가자 → GPT 학생: 47.3%</title></circle><text x="592.5142857142857" y="24.0" class="val b" text-anchor="middle">47.3</text><text x="140" y="83.0" class="lab" text-anchor="end">Claude 학생</text><line x1="150" x2="630" y1="78.0" y2="78.0" class="grid"/><circle cx="349.31428571428575" cy="78.0" r="6.5" fill="var(--c-gpt)" class="dot"><title>GPT 평가자 → Claude 학생: 29.5%</title></circle><circle cx="322.8" cy="78.0" r="6.5" fill="var(--c-gemini)" class="dot"><title>Gemini 평가자 → Claude 학생: 27.6%</title></circle><circle cx="376.74285714285713" cy="78.0" r="9" fill="var(--c-claude)" class="dot own"><title>Claude 평가자 → Claude 학생: 31.5%</title></circle><text x="376.74285714285713" y="64.0" class="val b" text-anchor="middle">31.5</text><text x="140" y="123.0" class="lab" text-anchor="end">Gemini 학생</text><line x1="150" x2="630" y1="118.0" y2="118.0" class="grid"/><circle cx="262.4571428571429" cy="118.0" r="6.5" fill="var(--c-gpt)" class="dot"><title>GPT 평가자 → Gemini 학생: 23.2%</title></circle><circle cx="286.2285714285715" cy="118.0" r="6.5" fill="var(--c-claude)" class="dot"><title>Claude 평가자 → Gemini 학생: 24.9%</title></circle><circle cx="382.2285714285715" cy="118.0" r="9" fill="var(--c-gemini)" class="dot own"><title>Gemini 평가자 → Gemini 학생: 31.9%</title></circle><text x="382.2285714285715" y="104.0" class="val b" text-anchor="middle">31.9</text></svg><figcaption>그림 6-1. 같은 학생의 답을 세 평가자가 1위로 놓은 비율(최종 순위, 평가자·학생마다 1,500번). 점 색 = 평가자, 큰 점과 숫자 = 자기 계열 평가자.</figcaption></figure>
+  <p><b>그림 6-1 읽는 법.</b> 한 줄이 학생 한 명(세로 비교를 가로로 눕힌 것)이고, 점 세 개가 세 평가자가 준 1위 비율이다. <b>큰 점(자기 계열 평가자)이 그 줄의 오른쪽 끝에 있으면</b> 자기 계열을 더 자주 1위로 놓았다는 뜻이다. 세 줄 모두 큰 점이 가장 오른쪽이지만, 간격은 Gemini 학생 줄에서 가장 넓다.</p>
+
+  <h3>6.4 결과 ② 선호 누출 추정: 단순 계산과 세 통계 모형 (주 결과, 최종 순위)</h3>
+  <p><b>무엇을 보는가.</b> 6.3의 세로 비교를 숫자 하나로 만든 것이 단순 계산이고, 다른 평가자의 편향과 품질·위치를 걸러 낸 것이 세 통계 모형이다(6.2). 주 결과는 <b>② 순위 로짓 모형(PL)의 승률 차</b>다.</p>
+  <div class="tw"><table class=""><thead><tr><th>평가자</th><th class="num">단순 계산 (1위 비율)<br>자기 평가자 vs 다른 평가자 평균</th><th class="num">① 1위 모형<br>1위 확률 차 %p</th><th class="num">② 순위 로짓 모형(PL)<br>승률 차 %p (주 결과)</th><th class="num">③ 쌍 고정효과 모형(LPM)<br>승률 차 %p</th><th class="num">PL: 양수인 seed</th></tr></thead><tbody><tr><td>GPT 평가자</td><td class='num'>47.3% vs 42.0% <b>(+5.3)</b></td><td class='num sig'><b>+3.5</b>*<br><span class='m'>[+0.5, +6.9] · p<sub>Holm</sub> 0.036</span></td><td class='num'><b>+2.8</b><br><span class='m'>[+0.2, +5.3] · p<sub>Holm</sub> 0.076</span></td><td class='num'><b>+2.8</b><br><span class='m'>[−0.6, +6.3] · p<sub>Holm</sub> 0.219</span></td><td class='num'>4/5</td></tr><tr><td>Claude 평가자</td><td class='num'>31.5% vs 28.6% <b>(+3.0)</b></td><td class='num'><b>+0.6</b><br><span class='m'>[−2.2, +3.7] · p<sub>Holm</sub> 0.700</span></td><td class='num'><b>−2.0</b><br><span class='m'>[−4.4, +0.6] · p<sub>Holm</sub> 0.130</span></td><td class='num'><b>−1.5</b><br><span class='m'>[−4.0, +0.9] · p<sub>Holm</sub> 0.225</span></td><td class='num'>1/5</td></tr><tr><td>Gemini 평가자</td><td class='num'>31.9% vs 24.1% <b>(+7.9)</b></td><td class='num sig'><b>+8.6</b>**<br><span class='m'>[+4.5, +12.9] · p<sub>Holm</sub> 0.003</span></td><td class='num sig'><b>+9.8</b>**<br><span class='m'>[+7.1, +12.5] · p<sub>Holm</sub> 0.003</span></td><td class='num sig'><b>+10.7</b>***<br><span class='m'>[+7.6, +13.8] · p<sub>Holm</sub> &lt;0.001</span></td><td class='num'>5/5</td></tr></tbody></table></div>
+  <p class="m">표 6-3. 단순 계산: 같은 학생에 대한 자기 계열 평가자의 1위 비율 vs 다른 두 평가자 평균(괄호 = 차이). 모형: 굵은 숫자 = 추정치(%p), 대괄호 = 95% 신뢰구간, p<sub>Holm</sub> = 평가자 3명에 대한 Holm 보정 p값(6.2 (6)). 음영·별표 = Holm p &lt; 0.05. 마지막 열 = ② 순위 로짓 모형(PL)을 seed별로 따로 추정했을 때 양수인 seed 수.</p>
+  <div class="note"><b>표 6-3 읽는 법.</b>
+  <ul style="margin-bottom:0">
+    <li><b>한 행 = 한 평가자.</b> 왼쪽에서 오른쪽으로 읽으면 "단순 계산 → 모형"으로 같은 평가자의 선호 누출이 어떻게 바뀌는지 보인다.</li>
+    <li><b>숫자 뜻:</b> ① 1위 모형의 +3.5는 "품질과 위치가 같은 세 답이라면 자기 계열 답이 1위로 뽑힐 확률이 33.3%에서 36.8%로 3.5%p 오른다"는 뜻이다. ②·③의 숫자는 "품질과 위치가 같은 상대를 이길 확률이 50%에서 몇 %p 오르나"다.</li>
+    <li><b>판단:</b> 신뢰구간이 0을 포함하지 않고 Holm p &lt; 0.05이면(음영) 우연으로 보기 어렵다. 0을 포함하면 이 자료로는 효과가 0이라는 가설을 버릴 수 없다.</li>
+  </ul></div>
+  <p><b>해석 (평가자별).</b></p>
+  <ul>
+    <li><b>Gemini 평가자:</b> 단순 계산 +7.9%p가 모형에서도 그대로 크다(① +8.6, ② +9.8, ③ +10.7%p, 세 모형 모두 음영). 품질과 위치가 같다면 Gemini 학생이 이길 확률은 50%가 아니라 약 60%다. <b>뚜렷한 선호 누출.</b></li>
+    <li><b>GPT 평가자:</b> 단순 계산 +5.3%p가 모형에서 줄어든다(① +3.5, ② +2.8, ③ +2.8%p). 줄어든 몫은 Gemini 평가자의 편향이 기준선을 낮춘 부분이다. 보조 지표인 ①에서만 음영이고 주 모형 ②와 ③에서는 신뢰구간이 0 근처까지 내려온다. <b>약한 증거.</b></li>
+    <li><b>Claude 평가자:</b> 단순 계산 +3.0%p가 모형에서 사라진다(① +0.6, ② −2.0, ③ −1.5%p, 신뢰구간이 모두 0 포함). <b>선호 누출이 관찰되지 않는다.</b></li>
+  </ul>
+  <figure><svg class="chart" viewBox="0 0 700 410" role="img" aria-label="추정치와 95% 신뢰구간" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><line x1="260" x2="610" y1="382" y2="382" class="axis"/><line x1="276.6666666666667" x2="276.6666666666667" y1="10" y2="382" class="grid"/><text x="276.6666666666667" y="398" class="tick" text-anchor="middle">−5</text><line x1="360.0" x2="360.0" y1="10" y2="382" class="grid"/><text x="360.0" y="398" class="tick" text-anchor="middle">0</text><line x1="443.33333333333337" x2="443.33333333333337" y1="10" y2="382" class="grid"/><text x="443.33333333333337" y="398" class="tick" text-anchor="middle">+5</text><line x1="526.6666666666666" x2="526.6666666666666" y1="10" y2="382" class="grid"/><text x="526.6666666666666" y="398" class="tick" text-anchor="middle">+10</text><line x1="610.0" x2="610.0" y1="10" y2="382" class="grid"/><text x="610.0" y="398" class="tick" text-anchor="middle">+15</text><line x1="360.0" x2="360.0" y1="8" y2="382" class="zero"/><text x="8" y="36.0" class="lab b">GPT 평가자</text><text x="250" y="66.0" class="lab" text-anchor="end">① 1위 모형 · 1위 확률 차</text><line x1="367.7742427643096" x2="474.4165673447514" y1="61.0" y2="61.0" stroke="var(--c-gpt)" stroke-width="2.5"/><circle cx="418.68452177099505" cy="61.0" r="7" fill="var(--c-gpt)" stroke="var(--c-gpt)" stroke-width="2.5"><title>① 1위 모형 · 1위 확률 차: +3.5%p [+0.5, +6.9]</title></circle><text x="616" y="66.0" class="val b">+3.5%p *</text><text x="250" y="96.0" class="lab" text-anchor="end">② 순위 로짓 모형(PL) · 승률 차</text><line x1="363.98742520751597" x2="448.4001820758681" y1="91.0" y2="91.0" stroke="var(--c-gpt)" stroke-width="2.5"/><circle cx="407.493491987754" cy="91.0" r="5.5" fill="var(--surface)" stroke="var(--c-gpt)" stroke-width="2.5"><title>② 순위 로짓 모형(PL) · 승률 차: +2.8%p [+0.2, +5.3]</title></circle><text x="616" y="96.0" class="val">+2.8%p </text><text x="250" y="126.0" class="lab" text-anchor="end">③ 쌍 고정효과 모형(LPM) · 승률 차</text><line x1="349.4198547331081" x2="464.5897491084391" y1="121.0" y2="121.0" stroke="var(--c-gpt)" stroke-width="2.5"/><circle cx="407.0048019207736" cy="121.0" r="5.5" fill="var(--surface)" stroke="var(--c-gpt)" stroke-width="2.5"><title>③ 쌍 고정효과 모형(LPM) · 승률 차: +2.8%p [−0.6, +6.3]</title></circle><text x="616" y="126.0" class="val">+2.8%p </text><text x="8" y="156.0" class="lab b">Claude 평가자</text><text x="250" y="186.0" class="lab" text-anchor="end">① 1위 모형 · 1위 확률 차</text><line x1="322.94046533316055" x2="421.4498808766837" y1="181.0" y2="181.0" stroke="var(--c-claude)" stroke-width="2.5"/><circle cx="369.6554433473441" cy="181.0" r="5.5" fill="var(--surface)" stroke="var(--c-claude)" stroke-width="2.5"><title>① 1위 모형 · 1위 확률 차: +0.6%p [−2.2, +3.7]</title></circle><text x="616" y="186.0" class="val">+0.6%p </text><text x="250" y="216.0" class="lab" text-anchor="end">② 순위 로짓 모형(PL) · 승률 차</text><line x1="285.88155755546984" x2="370.201484279103" y1="211.0" y2="211.0" stroke="var(--c-claude)" stroke-width="2.5"/><circle cx="327.35299231494656" cy="211.0" r="5.5" fill="var(--surface)" stroke="var(--c-claude)" stroke-width="2.5"><title>② 순위 로짓 모형(PL) · 승률 차: −2.0%p [−4.4, +0.6]</title></circle><text x="616" y="216.0" class="val">−2.0%p </text><text x="250" y="246.0" class="lab" text-anchor="end">③ 쌍 고정효과 모형(LPM) · 승률 차</text><line x1="292.7476694936838" x2="375.8144220095836" y1="241.0" y2="241.0" stroke="var(--c-claude)" stroke-width="2.5"/><circle cx="334.2810457516337" cy="241.0" r="5.5" fill="var(--surface)" stroke="var(--c-claude)" stroke-width="2.5"><title>③ 쌍 고정효과 모형(LPM) · 승률 차: −1.5%p [−4.0, +0.9]</title></circle><text x="616" y="246.0" class="val">−1.5%p </text><text x="8" y="276.0" class="lab b">Gemini 평가자</text><text x="250" y="306.0" class="lab" text-anchor="end">① 1위 모형 · 1위 확률 차</text><line x1="434.8473429026039" x2="574.8302456814041" y1="301.0" y2="301.0" stroke="var(--c-gemini)" stroke-width="2.5"/><circle cx="503.73995115371184" cy="301.0" r="7" fill="var(--c-gemini)" stroke="var(--c-gemini)" stroke-width="2.5"><title>① 1위 모형 · 1위 확률 차: +8.6%p [+4.5, +12.9]</title></circle><text x="616" y="306.0" class="val b">+8.6%p **</text><text x="250" y="336.0" class="lab" text-anchor="end">② 순위 로짓 모형(PL) · 승률 차</text><line x1="478.34855023583987" x2="568.3071110797865" y1="331.0" y2="331.0" stroke="var(--c-gemini)" stroke-width="2.5"/><circle cx="522.8268205904221" cy="331.0" r="7" fill="var(--c-gemini)" stroke="var(--c-gemini)" stroke-width="2.5"><title>② 순위 로짓 모형(PL) · 승률 차: +9.8%p [+7.1, +12.5]</title></circle><text x="616" y="336.0" class="val b">+9.8%p **</text><text x="250" y="366.0" class="lab" text-anchor="end">③ 쌍 고정효과 모형(LPM) · 승률 차</text><line x1="486.11307358841555" x2="590.0734010014121" y1="361.0" y2="361.0" stroke="var(--c-gemini)" stroke-width="2.5"/><circle cx="538.0932372949139" cy="361.0" r="7" fill="var(--c-gemini)" stroke="var(--c-gemini)" stroke-width="2.5"><title>③ 쌍 고정효과 모형(LPM) · 승률 차: +10.7%p [+7.6, +13.8]</title></circle><text x="616" y="366.0" class="val b">+10.7%p ***</text></svg><figcaption>그림 6-2. 주 결과: 평가자별 자기 계열 효과(최종 순위). 점 = 추정치(%p), 선 = 95% 신뢰구간, 0 = 편향 없음. 채운 점·별표 = Holm 보정 p &lt; 0.05. 학생 품질과 답변 위치를 통제한 값이다.</figcaption></figure>
+  <p><b>그림 6-2 읽는 법.</b> 표 6-3의 모형 결과를 그림으로 옮긴 것이다. 한 줄이 "평가자 × 모형" 하나다. 점이 추정치, 가로선이 95% 신뢰구간, 세로 0선이 "편향 없음"이다. <b>가로선 전체가 0선 오른쪽에 있으면</b> 자기 계열 우대가 우연이 아니라는 뜻이다. 채운 점은 Holm 보정 후에도 유의한 것이다. Gemini의 세 줄은 모두 0선에서 멀리 떨어져 있고, GPT는 0선에 걸치거나 겨우 떨어져 있으며, Claude는 0선을 가로지른다.</p>
+  <p class="m">식별 가정 검정(6.2 (5)): p = 0.98로, 세 평가자를 분리하는 데 필요한 가정이 자료와 맞는다.</p>
+
+  <h3>6.4.1 길이 통제: 자기 계열 선호가 답 길이 때문은 아닌가</h3>
+  <p><b>왜 확인했나.</b> LLM 평가자는 긴 답을 선호하는 길이 편향이 있다고 알려져 있고, 학생 답의 길이는 교사 계열마다 다르다(평균 GPT 학생 265, Gemini 학생 346, Claude 학생 421토큰). 만약 평가자마다 길이를 좋아하는 정도가 다르다면, 그 차이가 자기 계열 선호(λ)처럼 보일 수 있다. 예를 들어 Gemini 평가자만 중간 길이 답을 좋아한다면 Gemini 학생이 유리해진다.</p>
+  <p><b>어떻게 했나.</b> ② 순위 로짓 모형(PL)의 효용 식에 <b>평가자별 길이 항</b>을 추가해 다시 적합했다(<code>judge/analyze_models.py</code>, 결과 <code>model_length.csv</code>).</p>
+  <div class="eq"><i>u<sub>jit</sub></i> = <i>θ</i><sub><i>s</i>(<i>i</i>),<i>t</i></sub> + <i>δ</i><sub><i>j</i>,<i>a</i>(<i>i</i>,<i>t</i>)</sub> + <i>λ<sub>j</sub></i> · 𝟙[<i>t</i> = <i>j</i>] + <i>β<sub>j</sub></i> · <i>z</i><sub>len</sub>(<i>i</i>,<i>t</i>)</div>
+  <ul>
+    <li><i>z</i><sub>len</sub>: 그 학생 답의 생성 토큰 수에 log를 씌우고 표준화한 값(평균 0, 표준편차 1). 질문마다 다른 실제 길이를 쓴다.</li>
+    <li><i>β<sub>j</sub></i>: 평가자 <i>j</i>의 길이 기울기. 양수면 긴 답 선호, 음수면 짧은 답 선호. 평가자마다 따로 추정해 "평가자마다 길이 취향이 다르다"는 가능성까지 걸러 낸다.</li>
+    <li>이 항을 넣은 뒤에도 <i>λ<sub>j</sub></i>가 남으면, 그 몫은 길이로 설명되지 않는 자기 계열 선호다. 신뢰구간은 같은 질문 단위 부트스트랩(계산량 때문에 200회, 그래서 p의 최솟값은 0.005)으로 구했다.</li>
+  </ul>
+  <div class="tw"><table class=""><thead><tr><th>평가자</th><th class="num">길이가 다른 두 답 중<br>긴 답이 이긴 비율</th><th class="num">길이 기울기 β<sub>j</sub></th><th class="num">② 순위 로짓 모형(PL)<br>승률 차 (길이 통제 전)</th><th class="num">② + 평가자별 길이 항<br>승률 차 (길이 통제 후)</th></tr></thead><tbody><tr><td>GPT 평가자</td><td class='num'>42.2%</td><td class='num'>−0.16</td><td class='num'>+2.8 [+0.2, +5.3]</td><td class='num sig'><b>+5.4</b> [+1.9, +8.9]<br><span class='m'>p ≤ 0.005</span></td></tr><tr><td>Claude 평가자</td><td class='num'>42.0%</td><td class='num'>−0.28</td><td class='num'>−2.0 [−4.4, +0.6]</td><td class='num'><b>−0.3</b> [−3.4, +2.5]<br><span class='m'>p 0.870</span></td></tr><tr><td>Gemini 평가자</td><td class='num'>42.9%</td><td class='num'>−0.23</td><td class='num'>+9.8 [+7.1, +12.5]</td><td class='num sig'><b>+8.8</b> [+5.7, +11.3]<br><span class='m'>p ≤ 0.005</span></td></tr></tbody></table></div>
+  <p class="m">표 6-3b. 첫 열은 원자료(최종 순위에서 길이가 다른 두 학생 답을 1:1로 비교, 50%면 길이 무관). β는 표준화 log 길이 1단위당 로그 오즈. 음영 = p &lt; 0.05.</p>
+  <p><b>표 6-3b 읽는 법과 해석.</b></p>
+  <ul>
+    <li><b>세 평가자 모두 오히려 짧은 답을 약간 선호했다:</b> 긴 답이 이긴 비율이 42~43%로 50%보다 낮고, β도 모두 음수다. 그리고 세 평가자의 길이 취향이 비슷하다. 따라서 길이 차이가 특정 평가자의 자기 계열 선호를 만들어 냈을 가능성은 작다.</li>
+    <li><b>Gemini:</b> 길이를 통제해도 +9.8 → +8.8%p로 거의 그대로이고 신뢰구간이 0에서 멀다. <b>Gemini의 자기 계열 선호는 길이로 설명되지 않는다.</b></li>
+    <li><b>GPT:</b> +2.8 → +5.4%p로 오히려 커졌다. GPT 학생이 가장 짧고 세 평가자 모두 짧은 답을 좋아하는데, 짧은 답 선호가 GPT 평가자에게서 가장 약하다(β -0.16). 길이를 통제하지 않으면 이 몫이 GPT 학생의 품질 θ로 들어가 λ<sub>GPT</sub>를 가린다. 다만 이 값은 길이 모형을 넣었을 때만 유의해 모형 설정에 민감하므로, 주 결과(② 순위 로짓 모형)에 따라 GPT는 계속 "약한 증거"로 둔다.</li>
+    <li><b>Claude:</b> −2.0 → −0.3%p, 여전히 0 근처다.</li>
+    <li>③ 쌍 고정효과 모형(LPM)은 같은 두 답 쌍마다 고정효과를 두므로 길이 차이가 처음부터 흡수되어 있고, 그 결과도 Gemini +10.7%p로 같은 결론이다.</li>
+  </ul>
+
+
+  <h3>6.5 결과 ③ 다섯 번의 독립 학습(seed)에서도 반복되는가</h3>
+  <p><b>무엇을 보는가.</b> 같은 교사 데이터로 학생을 다섯 번(seed 42~46) 따로 학습했다. 6.4의 분석을 seed마다 따로 해서(seed 하나 = 질문 100 × 순서 3), 결과가 한 번의 학습 운이 아닌지 본다.</p>
+  <figure><svg class="chart" viewBox="0 0 660 172" role="img" aria-label="점 그림" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><line x1="150" x2="630" y1="144" y2="144" class="axis"/><line x1="171.8181818181818" x2="171.8181818181818" y1="10" y2="144" class="grid"/><text x="171.8181818181818" y="160" class="tick" text-anchor="middle">-5%p</text><line x1="280.9090909090909" x2="280.9090909090909" y1="10" y2="144" class="grid"/><text x="280.9090909090909" y="160" class="tick" text-anchor="middle">0%p</text><line x1="390.0" x2="390.0" y1="10" y2="144" class="grid"/><text x="390.0" y="160" class="tick" text-anchor="middle">5%p</text><line x1="499.0909090909091" x2="499.0909090909091" y1="10" y2="144" class="grid"/><text x="499.0909090909091" y="160" class="tick" text-anchor="middle">10%p</text><line x1="608.1818181818182" x2="608.1818181818182" y1="10" y2="144" class="grid"/><text x="608.1818181818182" y="160" class="tick" text-anchor="middle">15%p</text><line x1="280.9090909090909" x2="280.9090909090909" y1="8" y2="144" class="ref"/><text x="284.9090909090909" y="16" class="refl">0</text><text x="140" y="43.0" class="lab" text-anchor="end">GPT 평가자</text><line x1="150" x2="630" y1="38.0" y2="38.0" class="grid"/><circle cx="366.616636158496" cy="38.0" r="6.5" fill="var(--c-gpt)" class="dot"><title>seed 42 평가자 → GPT 평가자: 3.9%p</title></circle><circle cx="357.3379179201577" cy="38.0" r="6.5" fill="var(--c-gpt)" class="dot"><title>seed 43 평가자 → GPT 평가자: 3.5%p</title></circle><circle cx="328.0022646751038" cy="38.0" r="6.5" fill="var(--c-gpt)" class="dot"><title>seed 44 평가자 → GPT 평가자: 2.2%p</title></circle><circle cx="275.56091205390015" cy="38.0" r="6.5" fill="var(--c-gpt)" class="dot"><title>seed 45 평가자 → GPT 평가자: -0.2%p</title></circle><circle cx="385.502357961402" cy="38.0" r="6.5" fill="var(--c-gpt)" class="dot"><title>seed 46 평가자 → GPT 평가자: 4.8%p</title></circle><text x="140" y="83.0" class="lab" text-anchor="end">Claude 평가자</text><line x1="150" x2="630" y1="78.0" y2="78.0" class="grid"/><circle cx="223.43576887805816" cy="78.0" r="6.5" fill="var(--c-claude)" class="dot"><title>seed 42 평가자 → Claude 평가자: -2.6%p</title></circle><circle cx="245.2098359909304" cy="78.0" r="6.5" fill="var(--c-claude)" class="dot"><title>seed 43 평가자 → Claude 평가자: -1.6%p</title></circle><circle cx="184.82443584173228" cy="78.0" r="6.5" fill="var(--c-claude)" class="dot"><title>seed 44 평가자 → Claude 평가자: -4.4%p</title></circle><circle cx="255.1959624570775" cy="78.0" r="6.5" fill="var(--c-claude)" class="dot"><title>seed 45 평가자 → Claude 평가자: -1.2%p</title></circle><circle cx="281.70616105587357" cy="78.0" r="6.5" fill="var(--c-claude)" class="dot"><title>seed 46 평가자 → Claude 평가자: 0.0%p</title></circle><text x="140" y="123.0" class="lab" text-anchor="end">Gemini 평가자</text><line x1="150" x2="630" y1="118.0" y2="118.0" class="grid"/><circle cx="420.80644610611836" cy="118.0" r="6.5" fill="var(--c-gemini)" class="dot"><title>seed 42 평가자 → Gemini 평가자: 6.4%p</title></circle><circle cx="501.6592448664742" cy="118.0" r="6.5" fill="var(--c-gemini)" class="dot"><title>seed 43 평가자 → Gemini 평가자: 10.1%p</title></circle><circle cx="584.4871867937067" cy="118.0" r="6.5" fill="var(--c-gemini)" class="dot"><title>seed 44 평가자 → Gemini 평가자: 13.9%p</title></circle><circle cx="513.1025859242693" cy="118.0" r="6.5" fill="var(--c-gemini)" class="dot"><title>seed 45 평가자 → Gemini 평가자: 10.6%p</title></circle><circle cx="450.3025439163542" cy="118.0" r="6.5" fill="var(--c-gemini)" class="dot"><title>seed 46 평가자 → Gemini 평가자: 7.8%p</title></circle></svg><figcaption>그림 6-3. 다섯 번의 독립 학습(seed 42~46)에서 따로 추정한 자기 계열 효과(순위 로짓 PL, %p). 점 하나 = seed 하나.</figcaption></figure>
+  <p><b>그림 6-3 읽는 법.</b> 한 줄이 평가자 한 명, 점 하나가 seed 하나에서 추정한 ② 순위 로짓 모형(PL)의 승률 차다. <b>다섯 점이 모두 0선 오른쪽</b>이면 학생을 다섯 번 다시 학습해도 매번 자기 계열을 우대했다는 뜻이다. Gemini는 다섯 점이 모두 +6~+14%p에 있다. GPT는 넷이 오른쪽, 하나가 0 근처다. Claude는 대부분 0선 왼쪽이다.</p>
+  <div class="tw"><table class=""><thead><tr><th>평가자</th><th>모형</th><th class="num">seed 42</th><th class="num">43</th><th class="num">44</th><th class="num">45</th><th class="num">46</th><th class="num">양수</th><th class="num">t검정 p (Holm)</th></tr></thead><tbody><tr><td rowspan='3'>GPT</td><td>① 1위 모형</td><td class='num'>+9.0</td><td class='num'>+4.4</td><td class='num'>+0.4</td><td class='num'>−0.7</td><td class='num'>+4.4</td><td class='num'>4/5</td><td class='num'>0.055 (0.110)</td></tr><tr><td>② 순위 로짓 모형(PL)</td><td class='num'>+3.9</td><td class='num'>+3.5</td><td class='num'>+2.2</td><td class='num'>−0.2</td><td class='num'>+4.8</td><td class='num'>4/5</td><td class='num'>0.016 (0.032)</td></tr><tr><td>③ 쌍 고정효과 모형(LPM)</td><td class='num'>+3.2</td><td class='num'>+1.2</td><td class='num'>+3.2</td><td class='num'>−0.0</td><td class='num'>+6.5</td><td class='num'>4/5</td><td class='num'>0.032 (0.064)</td></tr><tr><td rowspan='3'>Claude</td><td>① 1위 모형</td><td class='num'>+0.1</td><td class='num'>+1.2</td><td class='num'>−2.3</td><td class='num'>+1.1</td><td class='num'>+3.8</td><td class='num'>4/5</td><td class='num'>0.238 (0.238)</td></tr><tr><td>② 순위 로짓 모형(PL)</td><td class='num'>−2.6</td><td class='num'>−1.6</td><td class='num'>−4.4</td><td class='num'>−1.2</td><td class='num'>+0.0</td><td class='num'>1/5</td><td class='num'>0.971 (0.971)</td></tr><tr><td>③ 쌍 고정효과 모형(LPM)</td><td class='num'>−2.8</td><td class='num'>−0.4</td><td class='num'>−3.8</td><td class='num'>−0.6</td><td class='num'>−0.1</td><td class='num'>0/5</td><td class='num'>0.947 (0.947)</td></tr><tr><td rowspan='3'>Gemini</td><td>① 1위 모형</td><td class='num'>+0.1</td><td class='num'>+10.1</td><td class='num'>+15.9</td><td class='num'>+10.1</td><td class='num'>+8.4</td><td class='num'>5/5</td><td class='num'>0.012 (0.037)</td></tr><tr><td>② 순위 로짓 모형(PL)</td><td class='num'>+6.4</td><td class='num'>+10.1</td><td class='num'>+13.9</td><td class='num'>+10.6</td><td class='num'>+7.8</td><td class='num'>5/5</td><td class='num'>&lt;0.001 (0.002)</td></tr><tr><td>③ 쌍 고정효과 모형(LPM)</td><td class='num'>+9.1</td><td class='num'>+9.5</td><td class='num'>+14.8</td><td class='num'>+10.1</td><td class='num'>+9.8</td><td class='num'>5/5</td><td class='num'>&lt;0.001 (&lt;0.001)</td></tr></tbody></table></div>
+  <p class="m">표 6-4. 세 모형 각각의 seed별 추정치(%p). 양수 = 다섯 seed 중 0보다 큰 개수. t검정 = 다섯 값의 평균이 0보다 큰지(한쪽), 괄호는 평가자 3명에 대한 Holm 보정 p.</p>
+  <p><b>표 6-4 읽는 법과 해석.</b> 한 행을 왼쪽에서 오른쪽으로 읽으면 seed마다의 값이고, 오른쪽 두 열이 반복성 판정이다. Gemini는 세 모형 모두 5/5 양수이고 t검정이 보정 후에도 유의하다 → <b>반복된다.</b> GPT는 대부분 4/5이고 주 모형의 t검정은 보정 후 0.032로 유의하지만 seed 45에서 0이다 → 방향은 일관되지만 작다. Claude는 주 모형 1/5 → 반복되는 효과가 없다.</p>
+
+  <h3>6.6 결과 ④ 평가 기준별 분석 (ablation)</h3>
+  <p><b>무엇을 보는가.</b> 6.4는 최종 순위로 계산했다. 평가자는 네 평가 기준(사실 정확성, 질문 충족도, 논리성, 가독성)의 순위도 매겼으므로 같은 분석을 기준마다 따로 해서, 선호 누출이 <b>어떤 판단</b>에서 나타나는지 본다.</p>
+  <div class="tw"><table class=""><thead><tr><th>결과</th><th>평가자</th><th class="num">① 1위 모형<br>1위 확률 차</th><th class="num">② 순위 로짓 모형(PL)<br>승률 차</th><th class="num">③ 쌍 고정효과 모형(LPM)<br>승률 차</th><th class="num">PL: 양수인 seed</th><th class="num">식별 가정 검정 p</th></tr></thead><tbody><tr><td rowspan='3'><b>최종 순위</b></td><td>GPT</td><td class='num sig'>+3.5*</td><td class='num'>+2.8</td><td class='num'>+2.8</td><td class='num'>4/5</td><td rowspan='3' class='num'>0.980</td></tr><tr><td>Claude</td><td class='num'>+0.6</td><td class='num'>−2.0</td><td class='num'>−1.5</td><td class='num'>1/5</td></tr><tr><td>Gemini</td><td class='num sig'>+8.6**</td><td class='num sig'>+9.8**</td><td class='num sig'>+10.7***</td><td class='num'>5/5</td></tr><tr><td rowspan='3'>사실 정확성</td><td>GPT</td><td class='num'>+2.0</td><td class='num'>+0.9</td><td class='num'>−0.0</td><td class='num'>3/5</td><td rowspan='3' class='num'>0.231</td></tr><tr><td>Claude</td><td class='num'>−0.3</td><td class='num'>−2.0</td><td class='num'>−0.8</td><td class='num'>2/5</td></tr><tr><td>Gemini</td><td class='num sig'>+8.4*</td><td class='num sig'>+10.9*</td><td class='num sig'>+8.6***</td><td class='num'>5/5</td></tr><tr><td rowspan='3'>질문 충족도</td><td>GPT</td><td class='num'>+2.4</td><td class='num'>+1.7</td><td class='num'>+0.7</td><td class='num'>5/5</td><td rowspan='3' class='num'>0.373</td></tr><tr><td>Claude</td><td class='num'>+3.2</td><td class='num'>+1.0</td><td class='num'>+1.5</td><td class='num'>4/5</td></tr><tr><td>Gemini</td><td class='num sig'>+5.0*</td><td class='num sig'>+4.3*</td><td class='num sig'>+5.4**</td><td class='num'>4/5</td></tr><tr><td rowspan='3'>논리성</td><td>GPT</td><td class='num'>+0.1</td><td class='num'>−0.9</td><td class='num'>+1.1</td><td class='num'>2/5</td><td rowspan='3' class='num'>0.029</td></tr><tr><td>Claude</td><td class='num'>−1.2</td><td class='num'>−2.0</td><td class='num'>−1.9</td><td class='num'>0/5</td></tr><tr><td>Gemini</td><td class='num'>+3.3</td><td class='num sig'>+3.6*</td><td class='num'>+2.6</td><td class='num'>5/5</td></tr><tr><td rowspan='3'>가독성</td><td>GPT</td><td class='num'>+0.1</td><td class='num'>+0.3</td><td class='num'>+2.6</td><td class='num'>2/5</td><td rowspan='3' class='num'>0.044</td></tr><tr><td>Claude</td><td class='num'>+1.6</td><td class='num'>−0.0</td><td class='num'>+0.2</td><td class='num'>2/5</td></tr><tr><td>Gemini</td><td class='num sig'>+7.8*</td><td class='num sig'>+6.9*</td><td class='num sig'>+6.2***</td><td class='num'>5/5</td></tr></tbody></table></div>
+  <p class="m">표 6-5. 값 = 자기 계열 효과(%p). 음영·별표 = Holm 보정 p &lt; 0.05(최종 순위는 평가자 3개, 네 기준은 4 × 3 = 12개를 한 묶음으로 보정). 식별 가정 검정 p &lt; 0.05이면 그 기준에서는 모형의 가정이 흔들린다는 뜻이다.</p>
+  <div class="note"><b>표 6-5 읽는 법.</b> <b>한 평가자를 정해 위에서 아래로</b>(기준을 따라) 읽는다. 예를 들어 Gemini 행만 따라가면 사실 정확성 → 질문 충족도 → 논리성 → 가독성에서 효과가 어떻게 달라지는지 보인다. 같은 기준 안에서 세 평가자를 비교하려면 세 행을 위아래로 비교한다.</div>
+  <p><b>해석.</b> Gemini 평가자는 사실 정확성·질문 충족도·가독성에서 세 모형 모두 유의하고, 가장 큰 기준은 <b>사실 정확성</b>이다(문체가 아니라 내용 판단에서 가장 컸다). 논리성에서는 가장 작고 ② 순위 로짓 모형(PL)에서만 유의하다. GPT와 Claude 평가자는 어떤 기준에서도 보정 후 유의하지 않다. 논리성·가독성은 식별 가정 검정이 경계 수준(p &lt; 0.05)이므로 그 두 기준의 추정치는 조심해서 읽는다.</p>
+  <figure><svg class="chart" viewBox="0 0 700 530" role="img" aria-label="추정치와 95% 신뢰구간" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><line x1="260" x2="610" y1="502" y2="502" class="axis"/><line x1="276.6666666666667" x2="276.6666666666667" y1="10" y2="502" class="grid"/><text x="276.6666666666667" y="518" class="tick" text-anchor="middle">−5</text><line x1="360.0" x2="360.0" y1="10" y2="502" class="grid"/><text x="360.0" y="518" class="tick" text-anchor="middle">0</text><line x1="443.33333333333337" x2="443.33333333333337" y1="10" y2="502" class="grid"/><text x="443.33333333333337" y="518" class="tick" text-anchor="middle">+5</text><line x1="526.6666666666666" x2="526.6666666666666" y1="10" y2="502" class="grid"/><text x="526.6666666666666" y="518" class="tick" text-anchor="middle">+10</text><line x1="610.0" x2="610.0" y1="10" y2="502" class="grid"/><text x="610.0" y="518" class="tick" text-anchor="middle">+15</text><line x1="360.0" x2="360.0" y1="8" y2="502" class="zero"/><text x="8" y="36.0" class="lab b">사실 정확성</text><text x="250" y="66.0" class="lab" text-anchor="end">GPT 평가자</text><line x1="329.65456997630025" x2="419.5471041087379" y1="61.0" y2="61.0" stroke="var(--c-gpt)" stroke-width="2.5"/><circle cx="375.5776513035514" cy="61.0" r="5.5" fill="var(--surface)" stroke="var(--c-gpt)" stroke-width="2.5"><title>GPT 평가자: +0.9%p [−1.8, +3.6]</title></circle><text x="616" y="66.0" class="val">+0.9%p </text><text x="250" y="96.0" class="lab" text-anchor="end">Claude 평가자</text><line x1="284.5958981657421" x2="368.17140401115614" y1="91.0" y2="91.0" stroke="var(--c-claude)" stroke-width="2.5"/><circle cx="326.4441678668536" cy="91.0" r="5.5" fill="var(--surface)" stroke="var(--c-claude)" stroke-width="2.5"><title>Claude 평가자: −2.0%p [−4.5, +0.5]</title></circle><text x="616" y="96.0" class="val">−2.0%p </text><text x="250" y="126.0" class="lab" text-anchor="end">Gemini 평가자</text><line x1="497.89829852305866" x2="587.6099676377665" y1="121.0" y2="121.0" stroke="var(--c-gemini)" stroke-width="2.5"/><circle cx="542.3463936414546" cy="121.0" r="7" fill="var(--c-gemini)" stroke="var(--c-gemini)" stroke-width="2.5"><title>Gemini 평가자: +10.9%p [+8.3, +13.7]</title></circle><text x="616" y="126.0" class="val b">+10.9%p *</text><text x="8" y="156.0" class="lab b">질문 충족도</text><text x="250" y="186.0" class="lab" text-anchor="end">GPT 평가자</text><line x1="351.5614823185994" x2="422.23739203006744" y1="181.0" y2="181.0" stroke="var(--c-gpt)" stroke-width="2.5"/><circle cx="388.1997425193422" cy="181.0" r="5.5" fill="var(--surface)" stroke="var(--c-gpt)" stroke-width="2.5"><title>GPT 평가자: +1.7%p [−0.5, +3.7]</title></circle><text x="616" y="186.0" class="val">+1.7%p </text><text x="250" y="216.0" class="lab" text-anchor="end">Claude 평가자</text><line x1="333.3331083402152" x2="421.1739416857695" y1="211.0" y2="211.0" stroke="var(--c-claude)" stroke-width="2.5"/><circle cx="375.92267773818804" cy="211.0" r="5.5" fill="var(--surface)" stroke="var(--c-claude)" stroke-width="2.5"><title>Claude 평가자: +1.0%p [−1.6, +3.7]</title></circle><text x="616" y="216.0" class="val">+1.0%p </text><text x="250" y="246.0" class="lab" text-anchor="end">Gemini 평가자</text><line x1="398.66958478299875" x2="472.06790782062785" y1="241.0" y2="241.0" stroke="var(--c-gemini)" stroke-width="2.5"/><circle cx="432.18726411086027" cy="241.0" r="7" fill="var(--c-gemini)" stroke="var(--c-gemini)" stroke-width="2.5"><title>Gemini 평가자: +4.3%p [+2.3, +6.7]</title></circle><text x="616" y="246.0" class="val b">+4.3%p *</text><text x="8" y="276.0" class="lab b">논리성</text><text x="250" y="306.0" class="lab" text-anchor="end">GPT 평가자</text><line x1="301.80752219380895" x2="389.7599399957253" y1="301.0" y2="301.0" stroke="var(--c-gpt)" stroke-width="2.5"/><circle cx="345.3229729990701" cy="301.0" r="5.5" fill="var(--surface)" stroke="var(--c-gpt)" stroke-width="2.5"><title>GPT 평가자: −0.9%p [−3.5, +1.8]</title></circle><text x="616" y="306.0" class="val">−0.9%p </text><text x="250" y="336.0" class="lab" text-anchor="end">Claude 평가자</text><line x1="280.1498608418133" x2="374.02215411378825" y1="331.0" y2="331.0" stroke="var(--c-claude)" stroke-width="2.5"/><circle cx="326.0601697566123" cy="331.0" r="5.5" fill="var(--surface)" stroke="var(--c-claude)" stroke-width="2.5"><title>Claude 평가자: −2.0%p [−4.8, +0.8]</title></circle><text x="616" y="336.0" class="val">−2.0%p </text><text x="250" y="366.0" class="lab" text-anchor="end">Gemini 평가자</text><line x1="382.3251199778575" x2="460.7739627705889" y1="361.0" y2="361.0" stroke="var(--c-gemini)" stroke-width="2.5"/><circle cx="420.00000999651735" cy="361.0" r="7" fill="var(--c-gemini)" stroke="var(--c-gemini)" stroke-width="2.5"><title>Gemini 평가자: +3.6%p [+1.3, +6.0]</title></circle><text x="616" y="366.0" class="val b">+3.6%p *</text><text x="8" y="396.0" class="lab b">가독성</text><text x="250" y="426.0" class="lab" text-anchor="end">GPT 평가자</text><line x1="325.56887368186824" x2="403.38599490953555" y1="421.0" y2="421.0" stroke="var(--c-gpt)" stroke-width="2.5"/><circle cx="364.338083839777" cy="421.0" r="5.5" fill="var(--surface)" stroke="var(--c-gpt)" stroke-width="2.5"><title>GPT 평가자: +0.3%p [−2.1, +2.6]</title></circle><text x="616" y="426.0" class="val">+0.3%p </text><text x="250" y="456.0" class="lab" text-anchor="end">Claude 평가자</text><line x1="318.4587746096145" x2="403.8350655198318" y1="451.0" y2="451.0" stroke="var(--c-claude)" stroke-width="2.5"/><circle cx="359.8871948983948" cy="451.0" r="5.5" fill="var(--surface)" stroke="var(--c-claude)" stroke-width="2.5"><title>Claude 평가자: −0.0%p [−2.5, +2.6]</title></circle><text x="616" y="456.0" class="val">−0.0%p </text><text x="250" y="486.0" class="lab" text-anchor="end">Gemini 평가자</text><line x1="440.33511007172535" x2="511.39216338318056" y1="481.0" y2="481.0" stroke="var(--c-gemini)" stroke-width="2.5"/><circle cx="474.564375053582" cy="481.0" r="7" fill="var(--c-gemini)" stroke="var(--c-gemini)" stroke-width="2.5"><title>Gemini 평가자: +6.9%p [+4.8, +9.1]</title></circle><text x="616" y="486.0" class="val b">+6.9%p *</text></svg><figcaption>그림 6-4. 평가 기준별 자기 계열 효과(순위 로짓 PL, %p, 95% CI). 채운 점 = 기준 4 × 평가자 3 = 12개 검정에 대한 Holm 보정 p &lt; 0.05.</figcaption></figure>
+  <p><b>그림 6-4 읽는 법.</b> 표 6-5의 ② 순위 로짓 모형(PL) 값을 기준별로 묶어 그린 것이다. 기준마다 세 평가자의 점과 신뢰구간이 있고, 0선 오른쪽에 떨어져 있는 것이 자기 계열 우대다. Gemini(초록)만 네 기준 모두 0선 오른쪽에 있다.</p>
+
+  <h3>6.7 결과 ⑤ 위치 편향: 순서를 바꿔 넣은 설계가 필요했나</h3>
+  <p><b>무엇을 보는가.</b> 같은 세 답을 순서만 바꿔 3번 넣었으므로, 각 학생이 A·B·C 위치에 정확히 500번씩 놓였다. 편향이 없다면 1위로 뽑힌 답의 위치는 A·B·C 각각 33.3%여야 한다.</p>
+  <figure><div class="legend"><span><i style="background:var(--c-gpt)"></i>GPT 평가자</span><span><i style="background:var(--c-claude)"></i>Claude 평가자</span><span><i style="background:var(--c-gemini)"></i>Gemini 평가자</span></div><svg class="chart" viewBox="0 0 640 280" role="img" aria-label="묶음 막대 그림" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><line x1="52" x2="628" y1="234.0" y2="234.0" class="grid"/><text x="46" y="238.0" class="tick" text-anchor="end">0%</text><line x1="52" x2="628" y1="181.0" y2="181.0" class="grid"/><text x="46" y="185.0" class="tick" text-anchor="end">15%</text><line x1="52" x2="628" y1="128.0" y2="128.0" class="grid"/><text x="46" y="132.0" class="tick" text-anchor="end">30%</text><line x1="52" x2="628" y1="75.0" y2="75.0" class="grid"/><text x="46" y="79.0" class="tick" text-anchor="end">45%</text><line x1="52" x2="628" y1="22.0" y2="22.0" class="grid"/><text x="46" y="26.0" class="tick" text-anchor="end">60%</text><line x1="52" x2="628" y1="234.0" y2="234.0" class="axis"/><rect x="95.0" y="58.74666666666667" width="34" height="175.25333333333333" rx="3" fill="var(--c-gpt)"><title>A (첫 번째) · GPT 평가자: 50%</title></rect><text x="112.0" y="53.74666666666667" class="val" text-anchor="middle">50</text><rect x="131.0" y="72.88" width="34" height="161.12" rx="3" fill="var(--c-claude)"><title>A (첫 번째) · Claude 평가자: 46%</title></rect><text x="148.0" y="67.88" class="val" text-anchor="middle">46</text><rect x="167.0" y="84.65777777777777" width="34" height="149.34222222222223" rx="3" fill="var(--c-gemini)"><title>A (첫 번째) · Gemini 평가자: 42%</title></rect><text x="184.0" y="79.65777777777777" class="val" text-anchor="middle">42</text><text x="148.0" y="254" class="lab" text-anchor="middle">A (첫 번째)</text><rect x="287.0" y="128.0" width="34" height="106.0" rx="3" fill="var(--c-gpt)"><title>B · GPT 평가자: 30%</title></rect><text x="304.0" y="123.0" class="val" text-anchor="middle">30</text><rect x="323.0" y="132.00444444444446" width="34" height="101.99555555555554" rx="3" fill="var(--c-claude)"><title>B · Claude 평가자: 29%</title></rect><text x="340.0" y="127.00444444444446" class="val" text-anchor="middle">29</text><rect x="359.0" y="130.12" width="34" height="103.88" rx="3" fill="var(--c-gemini)"><title>B · Gemini 평가자: 29%</title></rect><text x="376.0" y="125.12" class="val" text-anchor="middle">29</text><text x="340.0" y="254" class="lab" text-anchor="middle">B</text><rect x="479.0" y="161.92000000000002" width="34" height="72.07999999999998" rx="3" fill="var(--c-gpt)"><title>C (마지막) · GPT 평가자: 20%</title></rect><text x="496.0" y="156.92000000000002" class="val" text-anchor="middle">20</text><rect x="515.0" y="143.78222222222223" width="34" height="90.21777777777777" rx="3" fill="var(--c-claude)"><title>C (마지막) · Claude 평가자: 26%</title></rect><text x="532.0" y="138.78222222222223" class="val" text-anchor="middle">26</text><rect x="551.0" y="133.88888888888889" width="34" height="100.11111111111111" rx="3" fill="var(--c-gemini)"><title>C (마지막) · Gemini 평가자: 28%</title></rect><text x="568.0" y="128.88888888888889" class="val" text-anchor="middle">28</text><text x="532.0" y="254" class="lab" text-anchor="middle">C (마지막)</text><line x1="52" x2="628" y1="116.34000000000002" y2="116.34000000000002" class="ref"/><text x="624" y="111.34000000000002" class="refl" text-anchor="end">편향 없음 33.3%</text></svg><figcaption>그림 6-5. 평가자가 1위로 뽑은 답이 놓여 있던 위치(최종 순위, 평가자마다 1,500번). 각 학생은 A·B·C에 정확히 500번씩 놓였으므로, 편향이 없다면 세 위치 모두 33.3%여야 한다.</figcaption></figure>
+  <p><b>그림 6-5 읽는 법과 해석.</b> 가로축이 답이 놓인 위치, 막대가 평가자, 점선이 편향이 없을 때의 33.3%다. 세 평가자 모두 A(첫 번째)에서 막대가 점선보다 훨씬 높다(GPT 49.6%, Claude 45.6%, Gemini 42.3%). <b>먼저 보여 준 답을 1위로 고르는 경향이 실제로 있다.</b></p>
+  <div class="tw"><table class=""><thead><tr><th>평가자</th><th>학생</th><th class="num">A에 놓였을 때</th><th class="num">B</th><th class="num">C</th><th class="num">A→C</th></tr></thead><tbody><tr><td rowspan='3'>GPT 평가자</td><td>GPT 학생</td><td class='num'>1.48</td><td class='num'>1.76</td><td class='num'>2.00</td><td class='num'>+0.52</td></tr><tr><td>Claude 학생</td><td class='num'>1.73</td><td class='num'>2.08</td><td class='num'>2.36</td><td class='num'>+0.63</td></tr><tr><td>Gemini 학생</td><td class='num'>1.88</td><td class='num'>2.26</td><td class='num'>2.45</td><td class='num'>+0.57</td></tr><tr><td rowspan='3'>Claude 평가자</td><td>GPT 학생</td><td class='num'>1.54</td><td class='num'>1.84</td><td class='num'>1.97</td><td class='num'>+0.43</td></tr><tr><td>Claude 학생</td><td class='num'>1.83</td><td class='num'>2.11</td><td class='num'>2.23</td><td class='num'>+0.41</td></tr><tr><td>Gemini 학생</td><td class='num'>1.91</td><td class='num'>2.21</td><td class='num'>2.36</td><td class='num'>+0.44</td></tr><tr><td rowspan='3'>Gemini 평가자</td><td>GPT 학생</td><td class='num'>1.70</td><td class='num'>1.93</td><td class='num'>2.01</td><td class='num'>+0.32</td></tr><tr><td>Claude 학생</td><td class='num'>1.93</td><td class='num'>2.15</td><td class='num'>2.31</td><td class='num'>+0.38</td></tr><tr><td>Gemini 학생</td><td class='num'>1.78</td><td class='num'>2.03</td><td class='num'>2.16</td><td class='num'>+0.39</td></tr></tbody></table></div>
+  <p class="m">표 6-6. 같은 학생의 같은 답이 A·B·C에 놓였을 때 받은 평균 순위(1~3, 작을수록 좋음, 위치마다 500번). A→C = C에 놓였을 때 − A에 놓였을 때.</p>
+  <p><b>표 6-6 읽는 법과 해석.</b> 한 행을 왼쪽에서 오른쪽으로 읽으면 <b>답은 그대로 두고 위치만 바꿨을 때</b>의 순위 변화다. 모든 행에서 A → C로 갈수록 순위가 나빠진다. 예: GPT 평가자가 본 GPT 학생은 A에서 1.48위, C에서 2.00위로, 같은 답이 위치만으로 약 0.5등 차이가 난다. 이 위치 효과는 학생 간 품질 차이와 비슷하거나 크다. 각 학생이 세 위치에 똑같이 놓였기 때문에 6.4의 결과에는 이 효과가 섞이지 않는다.</p>
+  <div class="tw"><table class=""><thead><tr><th>결과</th><th class="num">GPT 평가자</th><th class="num">Claude 평가자</th><th class="num">Gemini 평가자</th></tr></thead><tbody><tr><td>최종 순위</td><td class='num'>49.6% · 2.24배 · 49%</td><td class='num'>45.6% · 1.83배 · 58%</td><td class='num'>42.3% · 1.69배 · 67%</td></tr><tr><td>사실 정확성</td><td class='num'>46.9% · 2.14배 · 51%</td><td class='num'>42.3% · 1.58배 · 60%</td><td class='num'>41.3% · 1.69배 · 71%</td></tr><tr><td>질문 충족도</td><td class='num'>51.2% · 2.15배 · 44%</td><td class='num'>46.2% · 1.80배 · 56%</td><td class='num'>42.9% · 1.72배 · 66%</td></tr><tr><td>논리성</td><td class='num'>32.3% · 1.31배 · 49%</td><td class='num'>41.0% · 1.43배 · 56%</td><td class='num'>41.7% · 1.76배 · 66%</td></tr><tr><td>가독성</td><td class='num'>35.5% · 1.17배 · 53%</td><td class='num'>47.3% · 1.89배 · 51%</td><td class='num'>43.1% · 1.62배 · 63%</td></tr></tbody></table></div>
+  <p class="m">표 6-7. 결과(최종 순위·네 기준)별, 평가자별: 1위가 A에 놓여 있던 비율 · 모형의 A 위치 오즈비(C 대비) · 순서 3가지에서 1위가 모두 같았던 묶음 비율.</p>
+  <p><b>표 6-7 읽는 법과 해석.</b> 한 칸에 세 숫자가 있다. 첫째(33.3%보다 클수록 첫 번째 답 선호), 둘째(1보다 클수록 A 위치 가산점이 큼), 셋째(100%에 가까울수록 순서를 바꿔도 판정이 안정적). 거의 모든 기준에서 A 선호가 나타났고, 순서 3가지에서 1위가 같았던 묶음은 약 절반~3분의 2뿐이다. 학생 답이 모두 품질이 낮고 비슷해 위치가 판정을 쉽게 바꾸는 조건이다. <b>순서를 하나로만 정해 평가했다면 위치 효과가 선호 누출보다 결과를 더 크게 좌우했을 것이다.</b></p>
+
+</section>
+
+<section id="s7"><h2><span class="no">7</span>결과 해석</h2>
+  <div class="note" style="font-size:15.5px"><b>연구 질문: "한국어 합성데이터에서도 LLM 평가자는 자기 모델이 만든 데이터로 학습한 모델의 답을 더 선호하는가?"</b><br>
+  <b>답: 그렇다. 다만 모든 평가자가 아니라 평가자 모델에 따라 다르다.</b> Gemini 평가자는 학생 품질과 위치를 통제한 뒤에도 자기 계열 학생을 분명히 더 높게 평가했고, GPT 평가자는 같은 방향의 약한 효과, Claude 평가자는 효과가 없었다.</div>
+
+  <h3>7.1 단순 계산에서 통계 모형으로: 무엇이 달라졌고 왜 달라졌나</h3>
+  <div class="flow">
+    <div><b>1단계: 단순 계산</b>같은 학생에 대해 [자기 계열 평가자의 값] − [다른 두 평가자 평균]. 원자료를 그대로 보여 준다.</div>
+    <div><b>2단계: 한계</b>다른 평가자도 자기 계열을 우대해 기준선이 오염된다. 품질·위치 통제가 없고, 우연인지 판단할 불확실성(p값, 신뢰구간)이 없다.</div>
+    <div><b>3단계: 통계 모형</b>쌍마다 중립 심판을 이용해 세 평가자의 효과를 동시에 추정. 학생 품질·위치 통제, 부트스트랩 신뢰구간, Holm 보정.</div>
+    <div><b>4단계: 결과</b>Gemini는 그대로 크고 유의. GPT는 줄어 약한 증거. Claude는 사라짐.</div>
+  </div>
+  <div class="cols"><div>
+  <div class="tw"><table class=""><thead><tr><th>평가자</th><th class="num">단순 계산 (쌍대 승률)<br>자기 평가자 − 다른 평가자 평균</th><th class="num">② 순위 로짓 모형(PL)<br>승률 차 [95% CI]</th><th class="num">모형 − 단순</th><th class="num">왜 달라졌나</th></tr></thead><tbody><tr><td>GPT 평가자</td><td class='num'>62.7% − 58.4% = <b>+4.3</b></td><td class='num'><b>+2.8</b><br><span class='m'>[+0.2, +5.3]</span></td><td class='num'>−1.4</td><td>단순 계산의 기준선(Claude·Gemini 평가자 평균)이 Gemini 평가자의 자기 우대 때문에 낮아져 있었다. 이를 빼면 효과가 작아진다</td></tr><tr><td>Claude 평가자</td><td class='num'>47.1% − 45.2% = <b>+1.8</b></td><td class='num'><b>−2.0</b><br><span class='m'>[−4.4, +0.6]</span></td><td class='num'>−3.8</td><td>Gemini 평가자가 Gemini 학생을 올리며 Claude 학생을 끌어내린 몫이 단순 계산에 섞여 있었다. 이를 빼면 남는 효과가 없다</td></tr><tr><td>Gemini 평가자</td><td class='num'>50.5% − 41.2% = <b>+9.3</b></td><td class='num sig'><b>+9.8</b>**<br><span class='m'>[+7.1, +12.5]</span></td><td class='num'>+0.4</td><td>자기 우대가 커서 다른 평가자 기준선의 왜곡보다 훨씬 크다. 두 방법 모두 같은 결론</td></tr></tbody></table></div>
+  <p class="m">주 지표(쌍대 승률) 기준, %p. 별표·음영 = Holm p &lt; 0.05. 1위 비율로 보아도 같은 방향이다(단순 GPT +5.3 → 모형 +3.5, Claude +3.0 → +0.6, Gemini +7.9 → +8.6).</p>
+  <p><b>읽는 법.</b> 단순 계산은 "다른 평가자 평균"을 기준선으로 쓰는데, Gemini 평가자는 자기 계열 학생을 크게 올려 주므로 Gemini 평가자 아래에서 GPT·Claude 학생은 낮게 평가된다. 그 낮아진 값이 GPT·Claude 학생의 기준선에 들어가 GPT·Claude 평가자의 누출이 부풀려진다. 모형은 이 몫을 Gemini의 λ로 따로 떼어 내므로, 남는 GPT·Claude의 효과가 작아진다.</p>
+  </div><div>
+  <figure><div class="legend"><span><i style="background:var(--c-neutral2)"></i>단순 계산</span><span><i style="background:var(--c-neutral)"></i>② 순위 로짓 모형(PL)</span></div><svg class="chart" viewBox="0 0 640 280" role="img" aria-label="묶음 막대 그림" font-family="Apple SD Gothic Neo, Pretendard, Noto Sans KR, system-ui, sans-serif"><line x1="52" x2="628" y1="226.42857142857142" y2="226.42857142857142" class="grid"/><text x="46" y="230.42857142857142" class="tick" text-anchor="end">−2.5</text><line x1="52" x2="628" y1="188.57142857142858" y2="188.57142857142858" class="grid"/><text x="46" y="192.57142857142858" class="tick" text-anchor="end">+0.0</text><line x1="52" x2="628" y1="150.71428571428572" y2="150.71428571428572" class="grid"/><text x="46" y="154.71428571428572" class="tick" text-anchor="end">+2.5</text><line x1="52" x2="628" y1="112.85714285714286" y2="112.85714285714286" class="grid"/><text x="46" y="116.85714285714286" class="tick" text-anchor="end">+5.0</text><line x1="52" x2="628" y1="75.0" y2="75.0" class="grid"/><text x="46" y="79.0" class="tick" text-anchor="end">+7.5</text><line x1="52" x2="628" y1="37.14285714285714" y2="37.14285714285714" class="grid"/><text x="46" y="41.14285714285714" class="tick" text-anchor="end">+10.0</text><line x1="52" x2="628" y1="188.57142857142858" y2="188.57142857142858" class="axis"/><rect x="113.0" y="123.70952380952384" width="34" height="64.86190476190474" rx="3" fill="var(--c-neutral2)"><title>GPT 평가자 · 단순 계산 (다른 두 평가자 평균 대비): +4.3</title></rect><text x="130.0" y="118.70952380952384" class="val" text-anchor="middle">+4.3</text><rect x="149.0" y="145.42019870826923" width="34" height="43.15122986315936" rx="3" fill="var(--c-neutral)"><title>GPT 평가자 · ② 순위 로짓 모형(PL) (세 평가자 동시 추정): +2.8</title></rect><text x="166.0" y="140.42019870826923" class="val" text-anchor="middle">+2.8</text><text x="148.0" y="254" class="lab" text-anchor="middle">GPT 평가자</text><rect x="305.0" y="160.80952380952397" width="34" height="27.761904761904617" rx="3" fill="var(--c-neutral2)"><title>Claude 평가자 · 단순 계산 (다른 두 평가자 평균 대비): +1.8</title></rect><text x="322.0" y="155.80952380952397" class="val" text-anchor="middle">+1.8</text><rect x="341.0" y="188.57142857142858" width="34" height="29.66213841099139" rx="3" fill="var(--c-neutral)"><title>Claude 평가자 · ② 순위 로짓 모형(PL) (세 평가자 동시 추정): −2.0</title></rect><text x="358.0" y="231.23356698241997" class="val" text-anchor="middle">−2.0</text><text x="340.0" y="254" class="lab" text-anchor="middle">Claude 평가자</text><rect x="497.0" y="47.238095238095326" width="34" height="141.33333333333326" rx="3" fill="var(--c-neutral2)"><title>Gemini 평가자 · 단순 계산 (다른 두 평가자 평균 대비): +9.3</title></rect><text x="514.0" y="42.238095238095326" class="val" text-anchor="middle">+9.3</text><rect x="533.0" y="40.6316315778451" width="34" height="147.93979699358349" rx="3" fill="var(--c-neutral)"><title>Gemini 평가자 · ② 순위 로짓 모형(PL) (세 평가자 동시 추정): +9.8</title></rect><text x="550.0" y="35.6316315778451" class="val" text-anchor="middle">+9.8</text><text x="532.0" y="254" class="lab" text-anchor="middle">Gemini 평가자</text></svg><figcaption>그림 7-1. 같은 주 지표(쌍대 승률)로 잰 자기 계열 효과(%p): 단순 계산 vs 통계 모형. 단순 계산에서는 Gemini 평가자의 강한 자기 우대가 다른 평가자의 기준선을 낮춰 GPT·Claude의 값이 부풀려진다. 모형으로 세 평가자를 동시에 추정하면 GPT는 줄고 Claude는 0 아래로 내려간다.</figcaption></figure>
+  </div></div>
+
+  <h3>7.2 가설 검정: 무엇을 검정했고 왜 "유의하다/유의하지 않다"고 판단했나</h3>
+  <div class="cols"><div>
+  <p><b>(1) 가설.</b> 평가자 j(GPT, Claude, Gemini) 각각에 대해 주 모형(② 순위 로짓 PL)의 자기 계열 효과 λ<sub>j</sub>를 검정한다.</p>
+<pre>귀무가설 H0: λ_j = 0
+  "평가자 j는 품질과 위치가 같다면 자기 계열 학생과 다른 학생을
+   같은 확률(50%)로 이긴다고 판정한다" → 선호 누출 없음
+
+대립가설 H1: λ_j ≠ 0  (양측 검정)
+  "같은 조건에서 자기 계열 학생을 이긴다고 판정할 확률이 50%와 다르다"
+
+유의수준 α = 0.05</pre>
+  <p>양측 검정을 쓴 이유: 평가자가 자기 계열을 오히려 <b>낮게</b> 볼 가능성(음수)도 열어 두기 위해서다. Claude의 추정치가 실제로 음수였다.</p>
+  </div><div>
+  <p><b>(2) 판정 규칙.</b> 신뢰구간과 p값은 질문 단위 부트스트랩 1,000회로 구했고, 평가자 3명을 함께 검정했으므로 Holm 보정 p로 판단한다. 두 도구의 개념, 사용 이유, 적용 절차와 Holm 계산 표는 6.2 (6)에 있다.</p>
+<pre>판정 기준
+  95% 신뢰구간이 0을 포함하지 않고 Holm p &lt; 0.05  →  H0 기각 (선호 누출 있음)
+  신뢰구간이 0을 포함하거나 Holm p ≥ 0.05          →  H0 기각 못함</pre>
+  <p>p값은 "선호 누출이 없는데도(H0) 이만큼 큰 효과가 우연히 나올 확률"에 해당한다. 신뢰구간은 "같은 방식으로 실험을 반복할 때 효과의 참값이 있을 범위"로 읽는다.</p>
+  </div></div>
+  <p><b>(3) 평가자별 판정과 그 이유</b></p>
+  <div class="tw"><table class=""><thead><tr><th>평가자</th><th>판정 (유의수준 5%, Holm 보정)</th><th>이유</th></tr></thead><tbody><tr><td>GPT 평가자</td><td><b>기각 못함</b> (보정 전에는 기각, 약한 증거)</td><td>추정치 +2.8%p, 95% 신뢰구간 [+0.2, +5.3]%p. 이 검정 하나만 보면 p 0.038 &lt; 0.05라 기각되지만, 평가자 3명을 함께 검정했으므로 Holm 보정을 하면 p 0.076 &gt; 0.05가 되어 기각하지 못한다. 신뢰구간 하한(+0.2%p)도 0에 매우 가깝다. 같은 자료를 다른 방식으로 본 쌍 고정효과 모형에서도 +2.8%p, p 0.110로 유의하지 않다. 다만 보조 지표인 1위 모형에서는 +3.5%p, Holm p 0.036로 유의하다. seed별 추정치 5개의 t검정은 Holm p 0.032로 유의해 방향은 반복되지만, 다섯 개 중 하나(seed 45)는 0 근처다. 평가자별 길이 항을 넣으면 +5.4%p로 유의해지지만(6.4.1), 그 모형에서만 유의해 설정에 민감하다. 방향은 일관되게 양수지만 크기가 작아, 주 모형의 전체 자료 검정에서 5% 기준을 안정적으로 넘지 못한다 → <b>약한 증거</b>로 해석한다.</td></tr><tr><td>Claude 평가자</td><td><b>기각 못함</b></td><td>추정치 −2.0%p, 95% 신뢰구간 [−4.4, +0.6]%p이 0을 포함한다(보정 전 p 0.130, Holm p 0.130). 즉 자료가 "자기 계열 효과 0"과 모순되지 않는다. 이것이 효과가 0임을 증명하는 것은 아니다. 신뢰구간의 상한이 +0.6%p이므로, 효과가 있더라도 이보다 작은 수준이라는 뜻이다. 보조 지표(+0.6%p, Holm p 0.700)와 쌍 고정효과 모형(−1.5%p, p 0.225)도 같다.</td></tr><tr><td>Gemini 평가자</td><td><b>귀무가설 기각</b></td><td>추정치 +9.8%p, 95% 신뢰구간 [+7.1, +12.5]%p 전체가 0보다 크다. 부트스트랩 1,000번 재추정에서 0 이하로 내려간 경우가 한 번도 없었고(보정 전 p ≤ 0.001), 평가자 3명을 함께 검정한 것을 감안해도(Holm p ≤ 0.003) 우연으로 보기 어렵다. 보조 지표(1위 모형 +8.6%p, Holm p ≤ 0.003)와 쌍 고정효과 모형(+10.7%p, Holm p &lt;0.001)에서도 같은 결론이다.</td></tr></tbody></table></div>
+  <div class="cols"><div>
+  <p><b>(4) seed 반복 검정.</b> seed마다 따로 추정한 효과 5개로 두 가지를 검정했다(한쪽 검정, "누출이 양수인가"를 묻기 때문).</p>
+  <ul>
+    <li><b>부호 검정:</b> H0 "각 seed의 효과가 양수일 확률 = 1/2". 5개 모두 양수면 p = 0.5<sup>5</sup> = 0.031. 다만 seed가 5개뿐이라 이 값이 가능한 최소 p이고, 평가자 3명에 Holm 보정을 하면 0.094가 되어 5%를 넘을 수 없다. 그래서 t검정을 함께 본다.</li>
+    <li><b>일표본 t검정:</b> H0 "5개 seed 효과의 평균 ≤ 0", H1 "평균 &gt; 0". 크기의 일관성까지 반영한다. Gemini: Holm p = 0.002로 기각, GPT: 0.032, Claude: 0.971.</li>
+  </ul>
+  </div><div>
+  <p><b>(5) "유의하지 않음"을 읽는 법.</b> 유의하지 않다는 것은 "효과가 없다"가 아니라 "<b>이 자료로는 효과가 0이라는 가설을 버릴 만큼 증거가 충분하지 않다</b>"는 뜻이다. 그래서 신뢰구간을 함께 보고, 효과가 있다면 최대 어느 정도인지(신뢰구간 상한)를 함께 말한다. 반대로 "유의하다"는 효과가 크다는 뜻이 아니므로, 효과 크기(%p)를 함께 보고한다.</p>
+  </div></div>
+
+  <h3>7.3 종합: 연구 질문에 대한 답과 근거</h3>
+  <div class="cols"><div>
+  <h3>왜 이렇게 결론 내릴 수 있는가</h3>
+  <ol>
+    <li><b>전제가 성립한다:</b> 세 교사의 답은 서식을 지워도 96.5%로 구별되고(4절), 학생 15명 모두 자기 교사의 스타일을 흡수했다(5절). 평가자가 자기 계열을 알아볼 단서가 있다.</li>
+    <li><b>품질이 아니라 평가자 차이다:</b> 같은 학생의 같은 답을 평가자끼리 비교했고, 학생 품질(15명)과 평가자별 위치 효과를 모형에 넣어 통제했다. 각 쌍에 중립인 제3의 평가자를 기준으로 삼아 세 평가자의 효과를 분리했고, 이를 위한 가정은 자료와 맞았다(p = 0.98).</li>
+    <li><b>Gemini의 효과는 크고 강건하다:</b> 1위 확률 +8.6%p(33.3% → 41.9%), 승률 +9.8%p(50% → 59.8%), 같은 두 답을 직접 비교한 가장 엄격한 모형에서 +10.7%p. 세 모형 모두 Holm p ≤ 0.003.</li>
+    <li><b>우연이 아니다:</b> Gemini의 효과는 학생을 다섯 번 따로 학습한 모든 경우에서 양수였다(5/5, t검정 Holm p = 0.002).</li>
+    <li><b>최종 순위만의 현상이 아니다:</b> Gemini는 사실 정확성·질문 충족도·가독성에서 세 모형 모두 유의했고, 누출이 가장 큰 기준은 <b>사실 정확성</b>이었다. 문체 취향을 넘어 자기 계열의 서술로 쓰인 내용을 더 정확하다고 판단했다.</li>
+    <li><b>길이로 설명되지 않는다:</b> 순위 로짓 모형에 평가자별 길이 항을 추가해 다시 적합해도 Gemini의 승률 차는 +8.8%p로 유지되었다(6.4.1). 세 평가자 모두 오히려 짧은 답을 약간 선호했다.</li>
+  </ol>
+  </div><div>
+  <h3>가설별 판정</h3>
+  <div class="tw"><table class=""><thead><tr><th>가설</th><th>판정</th><th>근거</th></tr></thead><tbody><tr><td>H1 자기 계열 선호</td><td><b>부분 지지</b></td><td>Gemini 강함, GPT 약함, Claude 없음</td></tr><tr><td>H2 기준별 차이</td><td><b>Gemini에서만 지지 (예상과 다른 방향)</b></td><td>Gemini: 사실 정확성 최대, 논리성 최소. GPT·Claude는 어느 기준에서도 유의하지 않아 기준 간 비교 불가</td></tr><tr><td>H3 seed 반복</td><td><b>Gemini에서 지지</b></td><td>5/5 seed 양수, t검정 유의</td></tr></tbody></table></div>
+  </div></div>
+  <div class="cols"><div>
+  <h3>방법론적 함의</h3>
+  <ul>
+    <li><b>단순 계산은 편향을 퍼뜨린다:</b> 다른 평가자를 기준선으로 쓰는 단순 계산으로는 세 평가자 모두 누출이 있어 보였다(승률 기준 GPT +4.3, Claude +1.8%p). 효과를 동시에 추정하면 Claude는 사라지고 GPT는 작아진다(7.1, 그림 7-1).</li>
+    <li><b>위치 편향이 누출보다 크다:</b> 첫 번째 답이 1위로 뽑힐 오즈가 마지막보다 1.7~2.2배(Gemini 누출 오즈비 1.49배). 순서 균형 설계 없이는 누출을 잴 수 없다.</li>
+  </ul>
+  </div><div>
+  <h3>한계</h3>
+  <ul>
+    <li>사람 평가가 없어 어느 평가자의 순위가 "옳은지"는 말할 수 없다. 누출은 평가자 간 체계적 차이로 정의했다.</li>
+    <li>0.6B 학생의 답은 대부분 품질이 낮다. 높은 품질의 답 사이에서도 같은 크기인지는 알 수 없다.</li>
+    <li>특정 모델 버전, 한국어 일반 질문 100개의 결과다. 중립 평가자(HyperCLOVA X)는 실행하지 않았다. 이를 보완할 실험은 8절에 정리했다.</li>
+  </ul>
+  </div></div>
+  <div class="note"><b>결론.</b> 한국어 합성데이터로 학습한 모델의 평가에서도 LLM 평가자의 선호 누출은 존재할 수 있으며, 평가자에 따라 승부를 50:50에서 약 60:40으로 기울일 만큼 크다. LLM-as-a-Judge로 학생 모델을 비교할 때는 생성 모델과 다른 계열의 평가자를 쓰거나, 여러 계열의 평가자와 순서 균형 설계를 함께 쓰고 평가자 효과를 모형으로 분리해 보고해야 한다.</div>
+</section>
+
+<section id="s8"><h2><span class="no">8</span>향후 연구 계획</h2>
+  <p>본 연구는 한국어 합성데이터로 학습한 모델의 평가에서 평가자 모델에 따라 선호 누출이 나타남을 확인했다. 다음 단계는 <b>① 누출이 언제 커지고 작아지는지</b>, <b>② 실제로 LLM-as-a-Judge를 쓸 때 어떻게 줄일지</b>를 실험으로 검증하는 것이다.</p>
+  <div class="cols"><div>
+  <h3>8.1 기준선 보강 (바로 수행)</h3>
+  <ul>
+    <li><b>중립 평가자 실행:</b> 생성에 쓰지 않은 HyperCLOVA X로 같은 1,500개 항목을 평가한다. 어느 학생과도 계열이 같지 않은 외부 기준선을 얻고, 모형의 식별 가정을 직접 확인한다.</li>
+    <li><b>소규모 인간 평가:</b> 평가 질문 일부를 사람 두 명 이상이 같은 방식으로 순위 매긴다. 어느 평가자의 순위가 사람과 가까운지 보고, 누출이 실제 판정 오류인지 확인한다.</li>
+  </ul>
+  <h3>8.2 데이터 혼합 실험: 누출은 데이터 비율을 따라가는가</h3>
+  <ul>
+    <li><b>설계:</b> 학습 데이터 1,000개 중 Gemini 답변 비율을 0, 25, 50, 75, 100%로 바꾸고 나머지를 GPT·Claude 답변으로 채워 학생을 학습한다(비율마다 seed 3~5). 세 교사 답변을 3분의 1씩 섞은 학생도 만든다.</li>
+    <li><b>측정:</b> 같은 listwise 설계와 순위 로짓 모형으로, 비율마다 Gemini 평가자의 자기 계열 효과 λ를 추정한다.</li>
+    <li><b>질문:</b> Gemini 데이터 비율이 커질수록 λ가 커지는가(용량 반응 관계). 일정 비율 아래에서는 사라지는 임계점이 있는가. 세 교사를 고르게 섞은 학생은 어느 평가자에게도 우대받지 않는가. 영어 환경에서는 합성데이터 비율과 누출 사이의 양의 관계가 보고되었다(Li et al., 2026).</li>
+    <li><b>실무 함의:</b> 여러 모델의 데이터를 섞어 학습하는 것이 누출을 줄이는 간단한 방법이 되는지 판단할 수 있다.</li>
+  </ul>
+  </div><div>
+  <h3>8.3 평가자 운용 실험: 같은 계열 평가자를 두지 않으면 공정해지는가</h3>
+  <div class="tw"><table class=""><thead><tr><th>방안</th><th>방법</th><th>확인할 것</th></tr></thead><tbody><tr><td><b>① 교차 계열 평가</b></td><td>각 학생을 생성 모델과 <b>다른 계열</b>의 평가자만으로 평가한다(예: Gemini 학생은 GPT·Claude 평가자)</td><td>현재 자료로 바로 계산할 수 있다. Gemini 평가자에서 생긴 Claude 학생과 Gemini 학생의 순위 역전이 사라지는가</td></tr><tr><td><b>② 다중 평가자 앙상블</b></td><td>서로 다른 계열의 평가자 3~4명의 순위를 합치되, 각 학생에서 자기 계열 평가자의 판정은 뺀다(leave-own-out)</td><td>단일 평가자보다 순위가 안정적인가, 인간 평가와 더 일치하는가</td></tr><tr><td><b>③ 중립 평가자 단독</b></td><td>데이터 생성에 쓰지 않은 모델 하나만 평가자로 쓴다</td><td>앙상블 대비 비용과 정확도</td></tr><tr><td><b>④ 문체 중화</b></td><td>평가 전에 세 답변을 제3의 모델로 같은 형식으로 바꿔 쓴다(paraphrase)</td><td>문체 단서를 지우면 λ가 줄어드는가. 영어에서는 효과가 작았다는 보고가 있다(Li et al., 2026)</td></tr><tr><td><b>⑤ 모형 보정</b></td><td>순서 균형 설계로 평가하고, 본 연구의 모형으로 λ를 추정해 빼고 보고한다</td><td>보정한 순위가 교차 계열 평가 순위와 일치하는가</td></tr></tbody></table></div>
+  <h3>8.4 일반화</h3>
+  <ul>
+    <li><b>학생 크기:</b> 1.5B~8B 학생으로 답 품질이 높아져도 누출이 유지되는지 본다. 본 연구의 답은 대부분 품질이 낮아 위치와 문체가 판정을 좌우하기 쉬운 조건이었다.</li>
+    <li><b>평가자와 과제:</b> 다른 평가자 버전, 요약과 추론 같은 다른 과제, DPO 같은 다른 학습법에서도 같은 평가자가 누출을 보이는지 확인한다.</li>
+  </ul>
+  </div></div>
+  <div class="note"><b>실무 권고 (현재 결과 기준).</b> LLM-as-a-Judge로 학생 모델을 비교할 때는 ① 데이터 생성 모델과 다른 계열의 평가자를 쓰고, ② 여러 계열의 평가자와 순서 균형 설계를 함께 쓰며, ③ 평가자별 효과를 분리해 보고한다. 8.3의 실험은 이 권고가 실제로 순위를 바로잡는지 검증하는 단계다.</div>
+</section>
+
+<section id="s9"><h2><span class="no">9</span>초록</h2>
+  <p class="abstract">LLM이 생성한 합성데이터로 학습한 모델을 다시 LLM이 채점하는 LLM-as-a-Judge 평가에서는 채점 LLM이 자기 데이터로 학습한 모델을 우대하는 선호 누출(preference leakage)이 보고되었으나, 관련 연구는 주로 영어로 이루어져 한국어 데이터에서의 양상은 충분히 다뤄지지 않았다. 본 연구는 GPT, Claude, Gemini의 한국어 답변으로 각각 학습한 학생 모델 15개를 같은 세 모델이 평가하도록 하였다. 평가자는 한 질문에 대한 세 학생의 답변을 FLASK 기반 네 기준(사실 정확성, 질문 충족도, 논리성, 가독성)과 이를 종합한 최종 순위에서 각각 1~3위로 매겼다(listwise 평가 4,500회). 이를 세 평가자가 공통으로 인정한 학생별 답변 품질과 답변이 프롬프트에 놓인 순서를 통제하며 평가자별 자기 계열 우대를 동시에 추정하는 순위 로짓 모형으로 분석하였다. 그 결과 최종 순위에서 Gemini 평가자는 품질이 같은 상대에 대해 자기 계열 학생의 승률을 9.8%p(95% 신뢰구간 7.1~12.5) 높게 판정하였고, 이는 5회 반복 학습과 답변의 생성 토큰 수를 통제한 뒤에도 유지되었다. 예를 들어 세 학생이 모두 핵심인 삼투압 조절을 설명하지 못한 '민물고기는 왜 바다에서 살 수 없는가' 질문에서 GPT와 Claude 평가자는 제시 순서를 바꾼 세 번 모두 GPT 학생을 1위로 판정하였으나, Gemini 평가자만 세 번 모두 Gemini 학생을 1위로 판정하였다. 반면 GPT 학생만 핵심 기전(IgE 면역 반응)을 맞힌 메밀 알레르기 질문에서는 세 평가자가 아홉 번 모두 GPT 학생을 1위로 판정하여, 평가자들이 내용의 우열은 공통으로 가려내며 자기 계열 우대는 우열이 분명하지 않은 답변 사이에서 나타날 수 있음을 시사하였다. 자기 계열 평가자의 승률에서 다른 두 평가자의 평균을 뺀 단순 비교에서는 GPT(4.3%p)와 Claude(1.8%p)도 선호를 보였으나, 이는 Gemini 평가자가 자기 학생을 올리며 다른 학생의 승률을 함께 낮춘 몫이 기준선에 섞인 결과로, 이를 분리한 모형에서는 유의하지 않았다. 이는 한국어 데이터로 학습한 모델의 평가에서 평가자 선택만으로 학생 모델 간 성능 순위가 바뀔 수 있음을 보여 주며, 생성 모델과 다른 계열의 평가자를 쓰고 답변 순서를 바꿔 가며 반복 평가하는 설계가 필요함을 시사한다.</p>
+  <p class="kw"><b>주요용어:</b> 선호 누출(preference leakage), LLM-as-a-Judge, 합성데이터, 순위 로짓 모형.</p>
+</section>
+
+<section id="refs"><h2>참고문헌</h2>
+  <ol style="font-size:13px">
+    <li>Li, D. et al. (2026). Preference Leakage: A Contamination Problem in LLM-as-a-judge. ICLR 2026. arXiv:2502.01534.</li>
+    <li>Luce, R. D. (1959). Individual Choice Behavior. Wiley. · Plackett, R. L. (1975). The analysis of permutations. Applied Statistics, 24(2), 193–202.</li>
+    <li>Panickssery, A., Bowman, S. R., &amp; Feng, S. (2024). LLM Evaluators Recognize and Favor Their Own Generations. NeurIPS 2024.</li>
+    <li>Shi, L. et al. (2025). Judging the Judges: A Systematic Study of Position Bias in LLM-as-a-Judge. arXiv:2406.07791.</li>
+    <li>Wang, P. et al. (2024). Large Language Models are not Fair Evaluators. ACL 2024.</li>
+    <li>Ye, S. et al. (2024). FLASK: Fine-grained Language Model Evaluation based on Alignment Skill Sets. ICLR 2024.</li>
+    <li>Zheng, L. et al. (2023). Judging LLM-as-a-Judge with MT-Bench and Chatbot Arena. NeurIPS 2023.</li>
+    <li>Efron, B. (1979). Bootstrap methods: Another look at the jackknife. The Annals of Statistics, 7(1), 1–26.</li>
+    <li>Holm, S. (1979). A simple sequentially rejective multiple test procedure. Scandinavian Journal of Statistics, 6(2), 65–70.</li>
+    <li>Bradley, R. A., &amp; Terry, M. E. (1952). Rank analysis of incomplete block designs: I. The method of paired comparisons. Biometrika, 39(3/4), 324–345.</li>
+    <li>McFadden, D. (1974). Conditional logit analysis of qualitative choice behavior. In P. Zarembka (Ed.), Frontiers in Econometrics, 105–142. Academic Press.</li>
+    <li>Beggs, S., Cardell, S., &amp; Hausman, J. (1981). Assessing the potential demand for electric cars. Journal of Econometrics, 17(1), 1–19.</li>
+    <li>Holtzman, A., Buys, J., Du, L., Forbes, M., &amp; Choi, Y. (2020). The Curious Case of Neural Text Degeneration. ICLR 2020. arXiv:1904.09751.</li>
+    <li>Welleck, S., Kulikov, I., Roller, S., Dinan, E., Cho, K., &amp; Weston, J. (2020). Neural Text Generation with Unlikelihood Training. ICLR 2020. arXiv:1908.04319.</li>
+    <li>Xu, J., Liu, X., Yan, J., Cai, D., Li, H., &amp; Li, J. (2022). Learning to Break the Loop: Analyzing and Mitigating Repetitions for Neural Text Generation. NeurIPS 2022. arXiv:2206.02369.</li>
+    <li>Li, H., Lan, T., Fu, Z., Cai, D., Liu, L., Collier, N., Watanabe, T., &amp; Su, Y. (2023). Repetition In Repetition Out: Towards Understanding Neural Text Degeneration from the Data Perspective. NeurIPS 2023. arXiv:2310.10226.</li>
+    <li>Keskar, N. S., McCann, B., Varshney, L. R., Xiong, C., &amp; Socher, R. (2019). CTRL: A Conditional Transformer Language Model for Controllable Generation. arXiv:1909.05858.</li>
+    <li>Cameron, A. C., &amp; Miller, D. L. (2015). A practitioner's guide to cluster-robust inference. Journal of Human Resources, 50(2), 317–372.</li>
+  </ol>
+  <p class="m">상세 방법과 전체 수치: description/result.html, teacher_style_analysis.html, sft_guide.html. 그림과 표는 results/poster.py가 분석 결과 파일에서 직접 생성했다.</p>
+</section>
+</main></body></html>

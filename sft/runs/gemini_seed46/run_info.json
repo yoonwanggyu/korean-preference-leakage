@@ -1,0 +1,55 @@
+{
+  "teacher": "gemini",
+  "seed": 46,
+  "base_model": "Qwen/Qwen3-0.6B-Base",
+  "hyperparameters": {
+    "epochs": 3,
+    "learning_rate": 1e-05,
+    "per_device_batch_size": 8,
+    "grad_accum": 2,
+    "effective_batch_size": 16,
+    "lr_scheduler": "cosine",
+    "warmup_ratio": 0.05,
+    "weight_decay": 0.0,
+    "max_grad_norm": 1.0,
+    "max_len": 1024,
+    "optimizer": "adamw_torch_fused",
+    "bf16": true,
+    "gradient_checkpointing": true,
+    "eval_steps": 10,
+    "loss": "token-mean cross-entropy on answer tokens + <|im_end|> (prompt masked with -100)"
+  },
+  "prompt_format": "<|im_start|>system\n당신은 한국어 사용자의 질문에 답하는 어시스턴트입니다.\n다음 규칙을 지켜 답변하십시오.\n\n1. 한국어로 답합니다. 전문용어는 필요하면 영어를 함께 적을 수 있습니다.\n2. 질문에 바로 답합니다. 되묻거나 추가 정보를 요청하지 않습니다. 질문이 모호하면 가장 일반적인 해석으로 답합니다.\n3. 답변은 600자 이내에서 완결되게 작성합니다.\n4. 자신이 AI라는 점, 모델 이름, 개발사를 언급하지 않습니다.\n5. 확실하지 않은 내용을 단정하지 않습니다. 존재하지 않는 출처나 링크를 만들지 않습니다.\n6. 의료, 법률, 금융처럼 전문가 확인이 필요한 질문에는 일반적인 정보를 제공하고, 필요하면 전문가 상담을 한 문장으로 권합니다.<|im_end|>\n<|im_start|>user\n{instruction}<|im_end|>\n<|im_start|>assistant\n{answer}<|im_end|>",
+  "system_prompt": "당신은 한국어 사용자의 질문에 답하는 어시스턴트입니다.\n다음 규칙을 지켜 답변하십시오.\n\n1. 한국어로 답합니다. 전문용어는 필요하면 영어를 함께 적을 수 있습니다.\n2. 질문에 바로 답합니다. 되묻거나 추가 정보를 요청하지 않습니다. 질문이 모호하면 가장 일반적인 해석으로 답합니다.\n3. 답변은 600자 이내에서 완결되게 작성합니다.\n4. 자신이 AI라는 점, 모델 이름, 개발사를 언급하지 않습니다.\n5. 확실하지 않은 내용을 단정하지 않습니다. 존재하지 않는 출처나 링크를 만들지 않습니다.\n6. 의료, 법률, 금융처럼 전문가 확인이 필요한 질문에는 일반적인 정보를 제공하고, 필요하면 전문가 상담을 한 문장으로 권합니다.",
+  "data": {
+    "train": {
+      "file": "gemini_train_1000.json",
+      "sha256": "06fb397923f1bf321169c645c2e602dada6779acfcc642d1eace5c4c8e6de4d0",
+      "n_examples": 1000,
+      "ids_sha256": "39ca3f028d23135c84d6dda4d13965e8dfa5b6a0de006987039730d57df47a64",
+      "answer_tokens": 335618,
+      "total_tokens": 591392,
+      "max_tokens": 900
+    },
+    "val": {
+      "file": "gemini_val.json",
+      "sha256": "c380099227c0c1a526fd492caac44699fefa186372d9034d72ca6120c9b01936",
+      "n_examples": 199,
+      "ids_sha256": "203ff9f6729c664c1c20ef8aac7efec09f0658e8c0f668ddcb93d997ba384905",
+      "answer_tokens": 65608,
+      "total_tokens": 116379,
+      "max_tokens": 797
+    }
+  },
+  "total_steps": 189,
+  "train_runtime_sec": 251.2,
+  "train_loss_mean": 1.9113445174757135,
+  "final_val_loss": 2.178079128265381,
+  "environment": {
+    "gpu": "NVIDIA A100-SXM4-40GB",
+    "torch": "2.11.0+cu128",
+    "transformers": "5.17.0",
+    "python": "3.13.15"
+  },
+  "finished_at": "2026-09-30 06:12:31"
+}
