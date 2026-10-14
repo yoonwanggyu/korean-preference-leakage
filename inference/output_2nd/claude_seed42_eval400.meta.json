@@ -1,0 +1,12 @@
+{
+  "teacher": "claude",
+  "seed": 42,
+  "decoding": "greedy",
+  "max_new_tokens": 1024,
+  "repetition_penalty": 1.1,
+  "batch_size": 64,
+  "dtype": "torch.bfloat16",
+  "gpu": "NVIDIA A100-SXM4-40GB",
+  "n_unfinished": 57,
+  "runtime_sec": 420.5
+}

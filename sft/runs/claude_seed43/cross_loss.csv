@@ -1,0 +1,4 @@
+student_teacher,seed,eval_teacher,loss,perplexity,n_answer_tokens
+claude,43,gpt,2.385917,10.8690,52402
+claude,43,claude,2.202690,9.0493,80021
+claude,43,gemini,2.310897,10.0835,65608

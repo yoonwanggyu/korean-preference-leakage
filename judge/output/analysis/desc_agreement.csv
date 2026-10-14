@@ -1,0 +1,16 @@
+criterion,pair,same_top1
+overall,gpt-claude,69.33333333333334
+overall,gpt-gemini,67.60000000000001
+overall,claude-gemini,66.4
+factuality,gpt-claude,70.06666666666666
+factuality,gpt-gemini,66.46666666666667
+factuality,claude-gemini,67.0
+comprehension,gpt-claude,68.46666666666667
+comprehension,gpt-gemini,68.06666666666666
+comprehension,claude-gemini,67.4
+logical_robustness,gpt-claude,60.333333333333336
+logical_robustness,gpt-gemini,60.53333333333333
+logical_robustness,claude-gemini,65.06666666666666
+readability,gpt-claude,60.46666666666667
+readability,gpt-gemini,66.06666666666666
+readability,claude-gemini,64.33333333333333

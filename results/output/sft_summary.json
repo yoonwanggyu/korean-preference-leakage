@@ -1,0 +1,74 @@
+{
+  "teachers": {
+    "gpt": {
+      "val_before": 2.6461,
+      "val_min_mean": 2.233,
+      "val_min_step": 120,
+      "val_final_mean": 2.2726,
+      "val_final_sd": 0.0006,
+      "train_last10_mean": 1.7175,
+      "runtime_min_mean": 3.99,
+      "answer_tokens": 264911
+    },
+    "claude": {
+      "val_before": 2.5013,
+      "val_min_mean": 2.1747,
+      "val_min_step": 120,
+      "val_final_mean": 2.2025,
+      "val_final_sd": 0.0013,
+      "train_last10_mean": 1.7355,
+      "runtime_min_mean": 4.74,
+      "answer_tokens": 407853
+    },
+    "gemini": {
+      "val_before": 2.4409,
+      "val_min_mean": 2.1441,
+      "val_min_step": 120,
+      "val_final_mean": 2.1786,
+      "val_final_sd": 0.0006,
+      "train_last10_mean": 1.6565,
+      "runtime_min_mean": 4.19,
+      "answer_tokens": 335618
+    }
+  },
+  "cross_loss_mean": {
+    "gpt": {
+      "gpt": 2.2723,
+      "claude": 2.3834,
+      "gemini": 2.4748
+    },
+    "claude": {
+      "gpt": 2.3704,
+      "claude": 2.2019,
+      "gemini": 2.3862
+    },
+    "gemini": {
+      "gpt": 2.3917,
+      "claude": 2.3079,
+      "gemini": 2.1784
+    }
+  },
+  "cross_loss_sd": {
+    "gpt": {
+      "gpt": 0.0009,
+      "claude": 0.0021,
+      "gemini": 0.001
+    },
+    "claude": {
+      "gpt": 0.0013,
+      "claude": 0.0011,
+      "gemini": 0.0008
+    },
+    "gemini": {
+      "gpt": 0.002,
+      "claude": 0.0021,
+      "gemini": 0.0005
+    }
+  },
+  "base_loss": {
+    "gpt": 2.6461,
+    "claude": 2.5013,
+    "gemini": 2.4409
+  },
+  "self_lowest_students": "15/15"
+}

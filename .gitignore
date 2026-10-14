@@ -218,3 +218,13 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Project
+.env
+.venv/
+__pycache__/
+sft/models/
+sft/checkpoints/
+classify/checkpoints/
+신청서_SampleTex
+.DS_Store
