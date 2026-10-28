@@ -1,0 +1,1071 @@
+{
+  "rule": "seed별로 그 seed의 학생 8명(GPT·Claude·Gemini 순수 + 혼합 5) 모두 완전한 질문 중 기존 100개 우선, 나머지 추첨",
+  "sample_seed": 42,
+  "per_seed": {
+    "42": {
+      "n_candidates": 225,
+      "n_kept_old": 78,
+      "n_new": 22
+    },
+    "43": {
+      "n_candidates": 144,
+      "n_kept_old": 60,
+      "n_new": 40
+    },
+    "44": {
+      "n_candidates": 106,
+      "n_kept_old": 40,
+      "n_new": 60
+    }
+  },
+  "selected_question_ids": {
+    "42": [
+      20,
+      323,
+      510,
+      724,
+      861,
+      1028,
+      1098,
+      1108,
+      1241,
+      1379,
+      1500,
+      1733,
+      1747,
+      1754,
+      1872,
+      2095,
+      2355,
+      2384,
+      2398,
+      2411,
+      2462,
+      2614,
+      2734,
+      2767,
+      3217,
+      3236,
+      3272,
+      3401,
+      3570,
+      3714,
+      3796,
+      3809,
+      3866,
+      3884,
+      4202,
+      5136,
+      5373,
+      5466,
+      5477,
+      5605,
+      5708,
+      5932,
+      6581,
+      6592,
+      6882,
+      7052,
+      7260,
+      7298,
+      7311,
+      7387,
+      7462,
+      7633,
+      8502,
+      8561,
+      8606,
+      8615,
+      8736,
+      9065,
+      9224,
+      9565,
+      9624,
+      10325,
+      10949,
+      11005,
+      11702,
+      11955,
+      12130,
+      12342,
+      12984,
+      13162,
+      13255,
+      13741,
+      13860,
+      14118,
+      14306,
+      14325,
+      14571,
+      14580,
+      14702,
+      14717,
+      15110,
+      15699,
+      15953,
+      16441,
+      16974,
+      17703,
+      17863,
+      18562,
+      18737,
+      18740,
+      18783,
+      19250,
+      19506,
+      19712,
+      20127,
+      20444,
+      20449,
+      20661,
+      20678,
+      20922
+    ],
+    "43": [
+      224,
+      323,
+      510,
+      724,
+      854,
+      1085,
+      1108,
+      1374,
+      1379,
+      1625,
+      1733,
+      1747,
+      1754,
+      1934,
+      1966,
+      2095,
+      2336,
+      2355,
+      2384,
+      2411,
+      2456,
+      2462,
+      2478,
+      2517,
+      2614,
+      2778,
+      3201,
+      3560,
+      3796,
+      3884,
+      4008,
+      4333,
+      4455,
+      5136,
+      5305,
+      5373,
+      5466,
+      5477,
+      5605,
+      6592,
+      6884,
+      7052,
+      7260,
+      7462,
+      7600,
+      7738,
+      7789,
+      7905,
+      8266,
+      8481,
+      8561,
+      8606,
+      8662,
+      8726,
+      9219,
+      9224,
+      9281,
+      9565,
+      9624,
+      9689,
+      10933,
+      10949,
+      11753,
+      11955,
+      12289,
+      12430,
+      12474,
+      12568,
+      12672,
+      12984,
+      13255,
+      13741,
+      13937,
+      14306,
+      14325,
+      14580,
+      14660,
+      14717,
+      14936,
+      15699,
+      15896,
+      15953,
+      16732,
+      17703,
+      17863,
+      17981,
+      18383,
+      18562,
+      18740,
+      19250,
+      19712,
+      19797,
+      19842,
+      20127,
+      20444,
+      20449,
+      20661,
+      20678,
+      20983,
+      21081
+    ],
+    "44": [
+      396,
+      510,
+      670,
+      854,
+      1241,
+      1379,
+      1733,
+      1754,
+      1872,
+      2095,
+      2212,
+      2398,
+      2411,
+      2778,
+      2969,
+      3152,
+      3201,
+      3217,
+      3236,
+      3401,
+      3752,
+      3866,
+      3873,
+      4008,
+      4162,
+      4455,
+      4656,
+      5373,
+      5397,
+      5466,
+      5604,
+      5605,
+      5636,
+      5641,
+      5708,
+      5932,
+      6882,
+      7387,
+      7462,
+      7600,
+      7789,
+      8080,
+      8266,
+      8365,
+      8499,
+      8502,
+      8606,
+      9163,
+      9219,
+      9238,
+      9312,
+      9565,
+      9624,
+      9687,
+      9802,
+      9927,
+      10069,
+      10212,
+      10933,
+      10949,
+      11005,
+      11283,
+      11753,
+      12130,
+      12310,
+      12672,
+      12984,
+      13146,
+      13177,
+      13364,
+      13561,
+      13741,
+      14118,
+      14281,
+      14306,
+      14325,
+      14571,
+      14702,
+      15110,
+      15231,
+      15360,
+      16073,
+      16869,
+      16887,
+      16974,
+      17981,
+      18339,
+      18459,
+      18740,
+      18937,
+      19250,
+      19274,
+      19494,
+      19510,
+      19712,
+      19797,
+      20027,
+      20678,
+      20708,
+      20922
+    ]
+  },
+  "conditions": {
+    "gemini_mix00": 0.0,
+    "gemini_mix25": 0.25,
+    "gemini_mix33": 0.334,
+    "gemini_mix50": 0.5,
+    "gemini_mix75": 0.75,
+    "gemini": 1.0
+  },
+  "reused_from_main": [
+    {
+      "seed": 42,
+      "question_id": 20
+    },
+    {
+      "seed": 42,
+      "question_id": 323
+    },
+    {
+      "seed": 42,
+      "question_id": 510
+    },
+    {
+      "seed": 42,
+      "question_id": 724
+    },
+    {
+      "seed": 42,
+      "question_id": 1028
+    },
+    {
+      "seed": 42,
+      "question_id": 1108
+    },
+    {
+      "seed": 42,
+      "question_id": 1379
+    },
+    {
+      "seed": 42,
+      "question_id": 1500
+    },
+    {
+      "seed": 42,
+      "question_id": 1733
+    },
+    {
+      "seed": 42,
+      "question_id": 1747
+    },
+    {
+      "seed": 42,
+      "question_id": 1754
+    },
+    {
+      "seed": 42,
+      "question_id": 1872
+    },
+    {
+      "seed": 42,
+      "question_id": 2095
+    },
+    {
+      "seed": 42,
+      "question_id": 2355
+    },
+    {
+      "seed": 42,
+      "question_id": 2384
+    },
+    {
+      "seed": 42,
+      "question_id": 2398
+    },
+    {
+      "seed": 42,
+      "question_id": 2411
+    },
+    {
+      "seed": 42,
+      "question_id": 2462
+    },
+    {
+      "seed": 42,
+      "question_id": 2614
+    },
+    {
+      "seed": 42,
+      "question_id": 3236
+    },
+    {
+      "seed": 42,
+      "question_id": 3401
+    },
+    {
+      "seed": 42,
+      "question_id": 3570
+    },
+    {
+      "seed": 42,
+      "question_id": 3714
+    },
+    {
+      "seed": 42,
+      "question_id": 3796
+    },
+    {
+      "seed": 42,
+      "question_id": 3866
+    },
+    {
+      "seed": 42,
+      "question_id": 3884
+    },
+    {
+      "seed": 42,
+      "question_id": 4202
+    },
+    {
+      "seed": 42,
+      "question_id": 5136
+    },
+    {
+      "seed": 42,
+      "question_id": 5373
+    },
+    {
+      "seed": 42,
+      "question_id": 5466
+    },
+    {
+      "seed": 42,
+      "question_id": 5477
+    },
+    {
+      "seed": 42,
+      "question_id": 5605
+    },
+    {
+      "seed": 42,
+      "question_id": 5708
+    },
+    {
+      "seed": 42,
+      "question_id": 7052
+    },
+    {
+      "seed": 42,
+      "question_id": 7260
+    },
+    {
+      "seed": 42,
+      "question_id": 7298
+    },
+    {
+      "seed": 42,
+      "question_id": 7387
+    },
+    {
+      "seed": 42,
+      "question_id": 7462
+    },
+    {
+      "seed": 42,
+      "question_id": 8561
+    },
+    {
+      "seed": 42,
+      "question_id": 8606
+    },
+    {
+      "seed": 42,
+      "question_id": 8615
+    },
+    {
+      "seed": 42,
+      "question_id": 9065
+    },
+    {
+      "seed": 42,
+      "question_id": 9224
+    },
+    {
+      "seed": 42,
+      "question_id": 9565
+    },
+    {
+      "seed": 42,
+      "question_id": 9624
+    },
+    {
+      "seed": 42,
+      "question_id": 10325
+    },
+    {
+      "seed": 42,
+      "question_id": 10949
+    },
+    {
+      "seed": 42,
+      "question_id": 11005
+    },
+    {
+      "seed": 42,
+      "question_id": 11702
+    },
+    {
+      "seed": 42,
+      "question_id": 11955
+    },
+    {
+      "seed": 42,
+      "question_id": 12130
+    },
+    {
+      "seed": 42,
+      "question_id": 12342
+    },
+    {
+      "seed": 42,
+      "question_id": 12984
+    },
+    {
+      "seed": 42,
+      "question_id": 13162
+    },
+    {
+      "seed": 42,
+      "question_id": 13255
+    },
+    {
+      "seed": 42,
+      "question_id": 13741
+    },
+    {
+      "seed": 42,
+      "question_id": 13860
+    },
+    {
+      "seed": 42,
+      "question_id": 14118
+    },
+    {
+      "seed": 42,
+      "question_id": 14306
+    },
+    {
+      "seed": 42,
+      "question_id": 14571
+    },
+    {
+      "seed": 42,
+      "question_id": 14580
+    },
+    {
+      "seed": 42,
+      "question_id": 14717
+    },
+    {
+      "seed": 42,
+      "question_id": 15110
+    },
+    {
+      "seed": 42,
+      "question_id": 15699
+    },
+    {
+      "seed": 42,
+      "question_id": 15953
+    },
+    {
+      "seed": 42,
+      "question_id": 16441
+    },
+    {
+      "seed": 42,
+      "question_id": 16974
+    },
+    {
+      "seed": 42,
+      "question_id": 17703
+    },
+    {
+      "seed": 42,
+      "question_id": 17863
+    },
+    {
+      "seed": 42,
+      "question_id": 18562
+    },
+    {
+      "seed": 42,
+      "question_id": 18740
+    },
+    {
+      "seed": 42,
+      "question_id": 18783
+    },
+    {
+      "seed": 42,
+      "question_id": 19250
+    },
+    {
+      "seed": 42,
+      "question_id": 19712
+    },
+    {
+      "seed": 42,
+      "question_id": 20444
+    },
+    {
+      "seed": 42,
+      "question_id": 20449
+    },
+    {
+      "seed": 42,
+      "question_id": 20661
+    },
+    {
+      "seed": 42,
+      "question_id": 20678
+    },
+    {
+      "seed": 43,
+      "question_id": 323
+    },
+    {
+      "seed": 43,
+      "question_id": 510
+    },
+    {
+      "seed": 43,
+      "question_id": 724
+    },
+    {
+      "seed": 43,
+      "question_id": 1085
+    },
+    {
+      "seed": 43,
+      "question_id": 1108
+    },
+    {
+      "seed": 43,
+      "question_id": 1379
+    },
+    {
+      "seed": 43,
+      "question_id": 1733
+    },
+    {
+      "seed": 43,
+      "question_id": 1747
+    },
+    {
+      "seed": 43,
+      "question_id": 1754
+    },
+    {
+      "seed": 43,
+      "question_id": 1966
+    },
+    {
+      "seed": 43,
+      "question_id": 2095
+    },
+    {
+      "seed": 43,
+      "question_id": 2355
+    },
+    {
+      "seed": 43,
+      "question_id": 2384
+    },
+    {
+      "seed": 43,
+      "question_id": 2411
+    },
+    {
+      "seed": 43,
+      "question_id": 2462
+    },
+    {
+      "seed": 43,
+      "question_id": 2614
+    },
+    {
+      "seed": 43,
+      "question_id": 2778
+    },
+    {
+      "seed": 43,
+      "question_id": 3796
+    },
+    {
+      "seed": 43,
+      "question_id": 3884
+    },
+    {
+      "seed": 43,
+      "question_id": 5136
+    },
+    {
+      "seed": 43,
+      "question_id": 5373
+    },
+    {
+      "seed": 43,
+      "question_id": 5466
+    },
+    {
+      "seed": 43,
+      "question_id": 5477
+    },
+    {
+      "seed": 43,
+      "question_id": 5605
+    },
+    {
+      "seed": 43,
+      "question_id": 6884
+    },
+    {
+      "seed": 43,
+      "question_id": 7052
+    },
+    {
+      "seed": 43,
+      "question_id": 7260
+    },
+    {
+      "seed": 43,
+      "question_id": 7462
+    },
+    {
+      "seed": 43,
+      "question_id": 7905
+    },
+    {
+      "seed": 43,
+      "question_id": 8561
+    },
+    {
+      "seed": 43,
+      "question_id": 8606
+    },
+    {
+      "seed": 43,
+      "question_id": 9224
+    },
+    {
+      "seed": 43,
+      "question_id": 9565
+    },
+    {
+      "seed": 43,
+      "question_id": 9624
+    },
+    {
+      "seed": 43,
+      "question_id": 10933
+    },
+    {
+      "seed": 43,
+      "question_id": 10949
+    },
+    {
+      "seed": 43,
+      "question_id": 11955
+    },
+    {
+      "seed": 43,
+      "question_id": 12289
+    },
+    {
+      "seed": 43,
+      "question_id": 12984
+    },
+    {
+      "seed": 43,
+      "question_id": 13255
+    },
+    {
+      "seed": 43,
+      "question_id": 13741
+    },
+    {
+      "seed": 43,
+      "question_id": 13937
+    },
+    {
+      "seed": 43,
+      "question_id": 14306
+    },
+    {
+      "seed": 43,
+      "question_id": 14580
+    },
+    {
+      "seed": 43,
+      "question_id": 14660
+    },
+    {
+      "seed": 43,
+      "question_id": 14717
+    },
+    {
+      "seed": 43,
+      "question_id": 15699
+    },
+    {
+      "seed": 43,
+      "question_id": 15953
+    },
+    {
+      "seed": 43,
+      "question_id": 17703
+    },
+    {
+      "seed": 43,
+      "question_id": 17863
+    },
+    {
+      "seed": 43,
+      "question_id": 18562
+    },
+    {
+      "seed": 43,
+      "question_id": 18740
+    },
+    {
+      "seed": 43,
+      "question_id": 19250
+    },
+    {
+      "seed": 43,
+      "question_id": 19712
+    },
+    {
+      "seed": 43,
+      "question_id": 19797
+    },
+    {
+      "seed": 43,
+      "question_id": 20444
+    },
+    {
+      "seed": 43,
+      "question_id": 20449
+    },
+    {
+      "seed": 43,
+      "question_id": 20661
+    },
+    {
+      "seed": 43,
+      "question_id": 20678
+    },
+    {
+      "seed": 43,
+      "question_id": 20983
+    },
+    {
+      "seed": 44,
+      "question_id": 510
+    },
+    {
+      "seed": 44,
+      "question_id": 1379
+    },
+    {
+      "seed": 44,
+      "question_id": 1733
+    },
+    {
+      "seed": 44,
+      "question_id": 1754
+    },
+    {
+      "seed": 44,
+      "question_id": 1872
+    },
+    {
+      "seed": 44,
+      "question_id": 2095
+    },
+    {
+      "seed": 44,
+      "question_id": 2398
+    },
+    {
+      "seed": 44,
+      "question_id": 2411
+    },
+    {
+      "seed": 44,
+      "question_id": 2778
+    },
+    {
+      "seed": 44,
+      "question_id": 3236
+    },
+    {
+      "seed": 44,
+      "question_id": 3401
+    },
+    {
+      "seed": 44,
+      "question_id": 3866
+    },
+    {
+      "seed": 44,
+      "question_id": 4656
+    },
+    {
+      "seed": 44,
+      "question_id": 5373
+    },
+    {
+      "seed": 44,
+      "question_id": 5397
+    },
+    {
+      "seed": 44,
+      "question_id": 5466
+    },
+    {
+      "seed": 44,
+      "question_id": 5605
+    },
+    {
+      "seed": 44,
+      "question_id": 5708
+    },
+    {
+      "seed": 44,
+      "question_id": 7387
+    },
+    {
+      "seed": 44,
+      "question_id": 7462
+    },
+    {
+      "seed": 44,
+      "question_id": 8606
+    },
+    {
+      "seed": 44,
+      "question_id": 9565
+    },
+    {
+      "seed": 44,
+      "question_id": 9624
+    },
+    {
+      "seed": 44,
+      "question_id": 10933
+    },
+    {
+      "seed": 44,
+      "question_id": 10949
+    },
+    {
+      "seed": 44,
+      "question_id": 11005
+    },
+    {
+      "seed": 44,
+      "question_id": 12130
+    },
+    {
+      "seed": 44,
+      "question_id": 12984
+    },
+    {
+      "seed": 44,
+      "question_id": 13741
+    },
+    {
+      "seed": 44,
+      "question_id": 14118
+    },
+    {
+      "seed": 44,
+      "question_id": 14306
+    },
+    {
+      "seed": 44,
+      "question_id": 14571
+    },
+    {
+      "seed": 44,
+      "question_id": 15110
+    },
+    {
+      "seed": 44,
+      "question_id": 16974
+    },
+    {
+      "seed": 44,
+      "question_id": 18740
+    },
+    {
+      "seed": 44,
+      "question_id": 19250
+    },
+    {
+      "seed": 44,
+      "question_id": 19274
+    },
+    {
+      "seed": 44,
+      "question_id": 19712
+    },
+    {
+      "seed": 44,
+      "question_id": 19797
+    },
+    {
+      "seed": 44,
+      "question_id": 20678
+    }
+  ],
+  "n_reused_groups": 178,
+  "n_new_groups": 1622,
+  "n_items": 4866,
+  "position_balance": {
+    "gpt": [
+      1622,
+      1622,
+      1622
+    ],
+    "claude": [
+      1622,
+      1622,
+      1622
+    ],
+    "gemini": [
+      1622,
+      1622,
+      1622
+    ]
+  }
+}

@@ -1,6 +1,6 @@
 """교사 한 명의 답변 1,000개로 Qwen3-0.6B-Base를 SFT(full fine-tuning)해 학생 모델을 만든다.
 
-사용법: python sft/train.py --teacher gpt --seed 42   (teacher: gpt | claude | gemini)
+사용법: python sft/train.py --teacher gpt --seed 42   (teacher: gpt | claude | gemini, 8.1 혼합 학생은 gemini_mix75 등)
         이미 끝난 (teacher, seed)는 건너뛴다. 다시 학습하려면 --force.
 
 세 학생은 교사 답변만 다르고 나머지(질문 id, 프롬프트, 하이퍼파라미터)는 모두 같다. seed는 학습 무작위성
@@ -120,7 +120,8 @@ def write_csvs(log, run_dir):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--teacher", required=True, choices=["gpt", "claude", "gemini"])
+    parser.add_argument("--teacher", required=True,
+                        help="gpt | claude | gemini, 또는 sft/data/{이름}_train_1000.json이 있는 혼합 학생 이름(build_mix.py)")
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--force", action="store_true", help="이미 끝난 run도 다시 학습한다")
     parser.add_argument("--smoke", action="store_true", help="코드 점검용: 16개로 1 epoch만 돌리고 smoke 폴더에 저장한다")

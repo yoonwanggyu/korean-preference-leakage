@@ -67,7 +67,7 @@ def compute(name, seed, model_path, out_path, limit):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--teacher", help="gpt | claude | gemini (코드 점검 때는 smoke)")
+    parser.add_argument("--teacher", help="gpt | claude | gemini | gemini_mix75 등 (코드 점검 때는 smoke)")
     parser.add_argument("--seed", type=int)
     parser.add_argument("--base", action="store_true", help="학습 전 원본 모델을 계산한다")
     parser.add_argument("--merge", action="store_true", help="학생별 결과를 sft/runs/cross_loss.csv로 합친다")

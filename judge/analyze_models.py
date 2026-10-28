@@ -96,7 +96,11 @@ def design(e, length=False, full=False):
 def fit_pl(e, length=False, full=False):
     """펼친 순위 로짓의 최대우도 추정. 선택 집합마다 softmax를 벡터화해 직접 계산한다
     (statsmodels ConditionalLogit과 같은 값, 부트스트랩을 위해 수백 배 빠르게)."""
-    X = design(e, length, full)
+    return fit_design(design(e, length, full), e)
+
+
+def fit_design(X, e):
+    """설계 행렬 X(행 = e의 선택 후보)로 조건부 로짓을 적합한다. analyze_mix.py도 이 함수로 다른 설계를 적합한다."""
     X = X.loc[:, X.std() > 0]   # seed별 적합 등에서 빈 열 제거
     codes, _ = pd.factorize(e["set"])
     idx = np.argsort(codes, kind="stable")

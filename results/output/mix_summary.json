@@ -1,0 +1,158 @@
+{
+  "cross_loss_gemini_gap_closed_pct": {
+    "gemini_mix00": 0.0,
+    "gemini_mix25": 57.4,
+    "gemini_mix33": 66.2,
+    "gemini_mix50": 80.0,
+    "gemini_mix75": 92.9,
+    "gemini": 100.0
+  },
+  "classified_as_gemini_pct": {
+    "gemini_mix00": [
+      0.3,
+      0.0,
+      0.7
+    ],
+    "gemini_mix25": [
+      7.8,
+      5.8,
+      10.0
+    ],
+    "gemini_mix33": [
+      15.3,
+      12.7,
+      18.0
+    ],
+    "gemini_mix50": [
+      37.6,
+      34.0,
+      41.2
+    ],
+    "gemini_mix75": [
+      80.7,
+      77.8,
+      83.3
+    ],
+    "gemini": [
+      99.7,
+      99.2,
+      99.9
+    ]
+  },
+  "classified_as_gemini_by_seed_pct": {
+    "claude": {
+      "42": 0.0,
+      "43": 0.0,
+      "44": 0.0
+    },
+    "gemini": {
+      "42": 99.5,
+      "43": 99.7,
+      "44": 99.7
+    },
+    "gemini_mix00": {
+      "42": 0.3,
+      "43": 0.3,
+      "44": 0.3
+    },
+    "gemini_mix25": {
+      "42": 8.4,
+      "43": 7.2,
+      "44": 7.7
+    },
+    "gemini_mix33": {
+      "42": 17.5,
+      "43": 14.9,
+      "44": 12.9
+    },
+    "gemini_mix50": {
+      "42": 34.9,
+      "43": 38.6,
+      "44": 39.7
+    },
+    "gemini_mix75": {
+      "42": 79.7,
+      "43": 79.1,
+      "44": 83.6
+    },
+    "gpt": {
+      "42": 0.0,
+      "43": 0.0,
+      "44": 0.5
+    }
+  },
+  "n_complete": {
+    "gemini_mix00_seed42": 362,
+    "gemini_mix00_seed43": 356,
+    "gemini_mix00_seed44": 304,
+    "gemini_mix25_seed42": 359,
+    "gemini_mix25_seed43": 290,
+    "gemini_mix25_seed44": 274,
+    "gemini_mix33_seed42": 365,
+    "gemini_mix33_seed43": 323,
+    "gemini_mix33_seed44": 280,
+    "gemini_mix50_seed42": 373,
+    "gemini_mix50_seed43": 376,
+    "gemini_mix50_seed44": 325,
+    "gemini_mix75_seed42": 374,
+    "gemini_mix75_seed43": 363,
+    "gemini_mix75_seed44": 353,
+    "gemini_seed42": 384,
+    "gemini_seed43": 383,
+    "gemini_seed44": 391,
+    "gpt_seed42": 380,
+    "gpt_seed43": 388,
+    "gpt_seed44": 386,
+    "claude_seed42": 343,
+    "claude_seed43": 296,
+    "claude_seed44": 322
+  },
+  "common_complete": {
+    "pure": {
+      "n": 208,
+      "kept_old": 100
+    },
+    "gemini_mix00": {
+      "n": 147,
+      "kept_old": 70
+    },
+    "gemini_mix25": {
+      "n": 108,
+      "kept_old": 51
+    },
+    "gemini_mix33": {
+      "n": 129,
+      "kept_old": 65
+    },
+    "gemini_mix50": {
+      "n": 162,
+      "kept_old": 89
+    },
+    "gemini_mix75": {
+      "n": 167,
+      "kept_old": 82
+    },
+    "gemini": {
+      "n": 189,
+      "kept_old": 100
+    },
+    "all": {
+      "n": 38,
+      "kept_old": 21
+    }
+  },
+  "common_complete_per_seed_all_conditions": {
+    "42": {
+      "n": 225,
+      "kept_old": 78
+    },
+    "43": {
+      "n": 144,
+      "kept_old": 60
+    },
+    "44": {
+      "n": 106,
+      "kept_old": 40
+    }
+  }
+}

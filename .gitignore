@@ -228,3 +228,5 @@ sft/checkpoints/
 classify/checkpoints/
 신청서_SampleTex
 .DS_Store
+colab
+*.zip

@@ -1,0 +1,152 @@
+{
+  "cross_loss_mean": {
+    "orig|claude|claude": 2.2024,
+    "orig|claude|gemini": 2.3092,
+    "orig|claude|gpt": 2.3848,
+    "orig|gemini|claude": 2.3864,
+    "orig|gemini|gemini": 2.1785,
+    "orig|gemini|gpt": 2.4743,
+    "orig|gpt|claude": 2.3712,
+    "orig|gpt|gemini": 2.3918,
+    "orig|gpt|gpt": 2.2726,
+    "rw|claude|claude": 2.4655,
+    "rw|claude|gemini": 2.4125,
+    "rw|claude|gpt": 2.6161,
+    "rw|gemini|claude": 2.5084,
+    "rw|gemini|gemini": 2.3929,
+    "rw|gemini|gpt": 2.6311,
+    "rw|gpt|claude": 2.4963,
+    "rw|gpt|gemini": 2.4281,
+    "rw|gpt|gpt": 2.5814
+  },
+  "own_advantage_mean": {
+    "orig|claude": -0.1764,
+    "orig|gemini": -0.172,
+    "orig|gpt": -0.1569,
+    "rw|claude": -0.0369,
+    "rw|gemini": -0.0275,
+    "rw|gpt": -0.0422
+  },
+  "own_advantage_by_seed": {
+    "orig|gpt|42": -0.1561,
+    "orig|gpt|43": -0.1589,
+    "orig|gpt|44": -0.1558,
+    "orig|claude|42": -0.1782,
+    "orig|claude|43": -0.1751,
+    "orig|claude|44": -0.176,
+    "orig|gemini|42": -0.1719,
+    "orig|gemini|43": -0.1735,
+    "orig|gemini|44": -0.1706,
+    "rw|gpt|42": -0.0412,
+    "rw|gpt|43": -0.0429,
+    "rw|gpt|44": -0.0426,
+    "rw|claude|42": -0.0385,
+    "rw|claude|43": -0.0372,
+    "rw|claude|44": -0.0351,
+    "rw|gemini|42": -0.0266,
+    "rw|gemini|43": -0.0254,
+    "rw|gemini|44": -0.0304
+  },
+  "teacher_identification_pct": {
+    "orig": [
+      99.3,
+      99.0,
+      99.6
+    ],
+    "rw": [
+      65.4,
+      63.6,
+      67.1
+    ]
+  },
+  "teacher_identification_by_seed": {
+    "orig": {
+      "42": 99.4,
+      "43": 99.3,
+      "44": 99.4
+    },
+    "rw": {
+      "42": 66.4,
+      "43": 65.8,
+      "44": 64.0
+    }
+  },
+  "teacher_identification_by_teacher": {
+    "orig": {
+      "claude": 99.1,
+      "gemini": 99.7,
+      "gpt": 99.2
+    },
+    "rw": {
+      "claude": 96.9,
+      "gemini": 69.3,
+      "gpt": 38.8
+    }
+  },
+  "orig_classifier_verdict_pct": {
+    "orig|claude": {
+      "claude": 99.1,
+      "gemini": 0.0,
+      "gpt": 0.9
+    },
+    "orig|gemini": {
+      "claude": 0.2,
+      "gemini": 99.7,
+      "gpt": 0.2
+    },
+    "orig|gpt": {
+      "claude": 0.6,
+      "gemini": 0.2,
+      "gpt": 99.2
+    },
+    "rw|claude": {
+      "claude": 5.5,
+      "gemini": 91.1,
+      "gpt": 3.4
+    },
+    "rw|gemini": {
+      "claude": 0.6,
+      "gemini": 97.2,
+      "gpt": 2.2
+    },
+    "rw|gpt": {
+      "claude": 1.2,
+      "gemini": 81.8,
+      "gpt": 17.0
+    }
+  },
+  "n_truncated": {
+    "orig|gpt|42": 20,
+    "rw|gpt|42": 30,
+    "orig|gpt|43": 12,
+    "rw|gpt|43": 15,
+    "orig|gpt|44": 14,
+    "rw|gpt|44": 14,
+    "orig|claude|42": 57,
+    "rw|claude|42": 128,
+    "orig|claude|43": 104,
+    "rw|claude|43": 121,
+    "orig|claude|44": 78,
+    "rw|claude|44": 133,
+    "orig|gemini|42": 16,
+    "rw|gemini|42": 19,
+    "orig|gemini|43": 17,
+    "rw|gemini|43": 21,
+    "orig|gemini|44": 9,
+    "rw|gemini|44": 19
+  },
+  "common_complete_rw_per_seed": {
+    "42": {
+      "n": 248,
+      "kept_old": 63
+    },
+    "43": {
+      "n": 263,
+      "kept_old": 69
+    },
+    "44": {
+      "n": 253,
+      "kept_old": 68
+    }
+  }
+}

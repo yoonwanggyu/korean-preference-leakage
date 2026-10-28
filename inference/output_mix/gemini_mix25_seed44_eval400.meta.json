@@ -1,0 +1,13 @@
+{
+  "teacher": "gemini_mix25",
+  "seed": 44,
+  "decoding": "greedy",
+  "max_new_tokens": 1024,
+  "repetition_penalty": 1.1,
+  "tag": "",
+  "max_prompt_tokens": 434,
+  "batch_size": 64,
+  "dtype": "torch.bfloat16",
+  "n_unfinished": 126,
+  "runtime_sec": 421.1
+}

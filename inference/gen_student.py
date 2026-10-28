@@ -68,7 +68,7 @@ def generate_all(model, tok, questions, max_new, repetition_penalty, batch_size)
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--teacher", help="gpt | claude | gemini (코드 점검 때는 smoke)")
+    parser.add_argument("--teacher", help="gpt | claude | gemini | gemini_mix75 등 (코드 점검 때는 smoke)")
     parser.add_argument("--seed", type=int)
     parser.add_argument("--force", action="store_true")
     parser.add_argument("--limit", type=int, help="코드 점검·파일럿용: 앞의 N개 질문만 생성한다")

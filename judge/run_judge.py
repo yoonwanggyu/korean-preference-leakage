@@ -17,12 +17,15 @@
   python judge/run_judge.py --judge hyperclova --limit 20  파일럿: 앞의 20개만 채점
   python judge/run_judge.py --judge claude                 전체 채점 (끊기면 다시 실행하면 이어서 진행)
   python judge/run_judge.py --judge gpt --pilot            파일럿: seed 42 묶음 10개 × 순서 3개 = 30개 (judge/output/pilot/에 따로 저장)
+  python judge/run_judge.py --judge gemini --mix           8.1 데이터 비율 실험: judge/data/mix/eval_items.json → judge/output/mix/raw/
+  python judge/run_judge.py --judge gemini --rw            8.2 문체 제거 실험: judge/data/rw/eval_items.json → judge/output/rw/raw/
 
 입력: judge/data/eval_items.json (select_items.py가 만든다)
 출력: judge/output/raw/{judge}.jsonl  한 줄에 한 항목 (채점 원본 기록, 이어하기에 쓴다)
   {item_id, group_id, rotation, order, judge, judge_model, question_id, seed,
    factuality: {reason, ranking: ["B","A","C"], ranks: {"gpt": 2, "claude": 1, "gemini": 3}}, ... 4개 기준 + overall}
   ranking은 평가자가 쓴 라벨(위치) 순위이고, ranks는 이를 교사별 순위로 풀어 쓴 것이다(order로 변환).
+  usage = {"in": 입력 토큰, "out": 출력 토큰(사고 포함), "think": 그중 사고 토큰} — 형식 오류로 다시 요청했으면 합계(비용 계산용).
   채점이 끝나면 judge/merge_results.py가 학생 응답 JSON에 평가 결과를 붙여 judge/output/judged/에 저장한다.
 형식이 틀린 응답은 최대 MAX_PARSE_TRIES번 다시 요청하고, 그래도 실패하면 기록하지 않는다(다시 실행하면 재시도).
 """
@@ -44,6 +47,10 @@ JUDGES = ["gpt", "claude", "gemini", "hyperclova"]
 ITEMS_PATH = Path(__file__).parent / "data" / "eval_items.json"
 RAW_DIR = Path(__file__).parent / "output" / "raw"
 PILOT_DIR = Path(__file__).parent / "output" / "pilot"
+MIX_ITEMS_PATH = Path(__file__).parent / "data" / "mix" / "eval_items.json"   # select_items_mix.py가 만든다
+MIX_RAW_DIR = Path(__file__).parent / "output" / "mix" / "raw"
+RW_ITEMS_PATH = Path(__file__).parent / "data" / "rw" / "eval_items.json"     # select_items_rw.py가 만든다
+RW_RAW_DIR = Path(__file__).parent / "output" / "rw" / "raw"
 PILOT_SEED, PILOT_N_QUESTIONS = 42, 10   # 파일럿 범위: seed 42 묶음 중 선정 질문 앞 10개 × 순서 3개
 EFFORT = os.environ.get("JUDGE_EFFORT", "medium")                       # 네 평가자 공통 추론 강도
 MAX_TOKENS = int(os.environ.get("JUDGE_MAX_TOKENS", 12288))            # 네 평가자 공통 출력 한도(사고 토큰 포함)
@@ -54,7 +61,7 @@ MAX_PARSE_TRIES = 3    # JSON 형식이 틀리면 다시 요청하는 횟수
 
 
 def make_client(judge):
-    """평가자별 (모델 이름, 호출 함수)를 돌려준다. 호출 함수는 (system, user) → 응답 텍스트."""
+    """평가자별 (모델 이름, 호출 함수)를 돌려준다. 호출 함수는 (system, user) → (응답 텍스트, 토큰 사용량)."""
     if judge == "gpt":
         from openai import OpenAI
         client, model = OpenAI(max_retries=MAX_RETRIES), os.environ["OPENAI_MODEL"]
@@ -64,7 +71,9 @@ def make_client(judge):
                                            max_output_tokens=MAX_TOKENS, reasoning={"effort": EFFORT})
             if resp.status != "completed":
                 raise RuntimeError(f"incomplete: {resp.incomplete_details}")
-            return resp.output_text
+            u = resp.usage
+            return resp.output_text, {"in": u.input_tokens, "out": u.output_tokens,
+                                      "think": u.output_tokens_details.reasoning_tokens}
         return model, call
 
     if judge == "claude":
@@ -78,7 +87,9 @@ def make_client(judge):
                                           thinking={"type": "adaptive"}, output_config={"effort": EFFORT})
             if resp.stop_reason != "end_turn":
                 raise RuntimeError(f"incomplete: {resp.stop_reason}")
-            return "".join(b.text for b in resp.content if b.type == "text")
+            # Claude는 사고 토큰을 따로 알려 주지 않는다(out에 포함)
+            return "".join(b.text for b in resp.content if b.type == "text"), {
+                "in": resp.usage.input_tokens, "out": resp.usage.output_tokens, "think": None}
         return model, call
 
     if judge == "gemini":
@@ -94,7 +105,9 @@ def make_client(judge):
             resp = client.models.generate_content(model=model, contents=user, config=config)
             if not resp.candidates or resp.candidates[0].finish_reason != types.FinishReason.STOP:
                 raise RuntimeError(f"incomplete: {resp.candidates[0].finish_reason if resp.candidates else 'blocked'}")
-            return resp.text
+            u = resp.usage_metadata
+            return resp.text, {"in": u.prompt_token_count, "out": (u.candidates_token_count or 0) + (u.thoughts_token_count or 0),
+                               "think": u.thoughts_token_count or 0}
         return model, call
 
     if judge == "hyperclova":
@@ -109,7 +122,8 @@ def make_client(judge):
                                                             {"role": "user", "content": user}])
             if resp.choices[0].finish_reason != "stop":
                 raise RuntimeError(f"incomplete: {resp.choices[0].finish_reason}")
-            return resp.choices[0].message.content
+            u = resp.usage
+            return resp.choices[0].message.content, {"in": u.prompt_tokens, "out": u.completion_tokens, "think": None}
         return model, call
 
     raise ValueError(judge)
@@ -117,11 +131,12 @@ def make_client(judge):
 
 def judge_one(call, item):
     base = build_user_prompt(item["instruction"], item["answers"])
-    user, last_error = base, None
+    user, last_error, usage = base, None, {"in": 0, "out": 0, "think": 0}
     for _ in range(MAX_PARSE_TRIES):
-        text = call(JUDGE_SYSTEM, user)
+        text, u = call(JUDGE_SYSTEM, user)
+        usage = {k: None if u[k] is None or usage[k] is None else usage[k] + u[k] for k in usage}
         try:
-            return parse_judgement(text)
+            return parse_judgement(text), usage
         except (ValueError, json.JSONDecodeError) as e:
             last_error = e
             # Gemini가 가끔 overall에 근거만 쓰고 ranking을 빠뜨리며, 같은 프롬프트로는 같은 항목에서 반복된다.
@@ -138,10 +153,12 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="API를 부르지 않고 첫 항목의 프롬프트만 출력")
     parser.add_argument("--pilot", action="store_true", help="seed 42 묶음 10개 × 순서 3개만 채점해 pilot 폴더에 저장")
     parser.add_argument("--workers", type=int, help="동시 요청 수 (기본: 평가자별 MAX_WORKERS)")
+    parser.add_argument("--mix", action="store_true", help="8.1 데이터 비율 실험 항목을 채점해 judge/output/mix/raw/에 저장")
+    parser.add_argument("--rw", action="store_true", help="8.2 문체 제거 실험 항목을 채점해 judge/output/rw/raw/에 저장")
     cli = parser.parse_args()
 
-    items = json.loads(ITEMS_PATH.read_text(encoding="utf-8"))
-    raw_dir = RAW_DIR
+    items_path, raw_dir = (MIX_ITEMS_PATH, MIX_RAW_DIR) if cli.mix else (RW_ITEMS_PATH, RW_RAW_DIR) if cli.rw else (ITEMS_PATH, RAW_DIR)
+    items = json.loads(items_path.read_text(encoding="utf-8"))
     if cli.pilot:
         qids = sorted({it["question_id"] for it in items})[:PILOT_N_QUESTIONS]
         items = [it for it in items if it["seed"] == PILOT_SEED and it["question_id"] in qids]
@@ -170,7 +187,7 @@ def main():
         for n, fut in enumerate(as_completed(futures), 1):
             it = futures[fut]
             try:
-                result = fut.result()
+                result, usage = fut.result()
             except Exception as e:
                 # 에러 메시지에 요청 정보가 섞일 수 있어 종류와 상태 코드만 남긴다.
                 n_fail += 1
@@ -180,11 +197,16 @@ def main():
             row = {"item_id": it["item_id"], "group_id": it["group_id"], "rotation": it["rotation"],
                    "order": it["order"], "judge": cli.judge, "judge_model": model,
                    "question_id": it["question_id"], "seed": it["seed"]}
+            if "ratio" in it:   # 8.1: 묶음의 Gemini 계열 학생이 어느 비율 조건인지
+                row["condition"], row["ratio"] = it["condition"], it["ratio"]
+            elif "condition" in it:   # 8.2: 재작성 학생 묶음
+                row["condition"] = it["condition"]
             for k in OUTPUT_KEYS:
                 ranking = result[k]["ranking"]
                 # 라벨(위치) 순위를 교사별 순위로 바꾼다: order[i]가 라벨 LABELS[i]에 놓인 교사
                 ranks = {it["order"][LABELS.index(lab)]: rank for rank, lab in enumerate(ranking, 1)}
                 row[k] = {"reason": result[k]["reason"], "ranking": ranking, "ranks": ranks}
+            row["usage"] = usage
             f.write(json.dumps(row, ensure_ascii=False) + "\n")
             f.flush()   # 한 항목마다 바로 기록해 끊겨도 잃지 않는다
             if n % 50 == 0:
