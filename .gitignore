@@ -230,3 +230,9 @@ classify/checkpoints/
 .DS_Store
 colab
 *.zip
+
+# Claude Code 설정 (로컬 전용)
+CLAUDE.md
+CLAUDE.local.md
+.claude/
+.mcp.json
